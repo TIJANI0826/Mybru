@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Cart - myBru</title>
+    <title>Product Detail - myBru</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -18,7 +18,7 @@
                 <li><a href="exclusive.html">Membership</a></li>
                 <li><a href="about.html">About Us</a></li>
                 <li><a href="orders.html">Orders</a></li>
-                <li><a href="cart.html" class="nav-active">Cart</a></li>
+                <li><a href="cart.html">Cart</a></li>
             </ul>
         </nav>
 
@@ -49,22 +49,11 @@
             </div>
         </header>
 
-        <!-- nav moved above header for mobile-first ordering -->
-
         <main>
-            <section id="cart-details">
-                <h2>Your Shopping Cart</h2>
-                <div id="cart-items-container">
-                    <!-- Cart items will be loaded here dynamically -->
-                    <p>Your cart is empty.</p>
-                </div>
-                <div id="cart-summary">
-                    <h3>Total: $<span id="cart-total">0.00</span></h3>
-                    <a href="checkout.html" id="checkout-btn" class="add-to-cart-btn">Proceed to Checkout</a>
-                </div>
+            <section id="product-detail">
+                <p>Loading product...</p>
             </section>
         </main>
-
     </div>
     <footer class="site-footer">
         <div class="container">
@@ -83,5 +72,6 @@
         </div>
     </footer>
     <script src="js/main.js"></script>
+    <script src="js/product.js"></script>
 </body>
 </html>

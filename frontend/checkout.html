@@ -75,13 +75,17 @@
                     <div id="pickup-location" class="delivery-option-details">
                         <h4>Choose Pickup Location:</h4>
                         <select id="pickup-select">
-                            <option value="store-a">Store A (123 Main St)</option>
-                            <option value="store-b">Store B (456 Oak Ave)</option>
+                            <!-- Populated from backend -->
                         </select>
                     </div>
 
                     <div id="delivery-address" class="delivery-option-details" style="display: none;">
                         <h4>Delivery Address:</h4>
+                        <label for="delivery-address-select">Use saved address:</label>
+                        <select id="delivery-address-select">
+                            <option value="">-- Use a new address --</option>
+                        </select>
+                        <p style="margin:8px 0;">Or enter a new address below:</p>
                         <input type="text" id="address-line1" placeholder="Address Line 1">
                         <input type="text" id="address-line2" placeholder="Address Line 2 (Optional)">
                         <input type="text" id="city" placeholder="City">

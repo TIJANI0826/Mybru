@@ -1045,6 +1045,28 @@ button[type="submit"]:hover {
     }
 }
 
+/* Slide-down entrance for product cards */
+.slide-down {
+    opacity: 0;
+    transform: translateY(10px);
+    animation-name: slideDown;
+    animation-duration: 360ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-fill-mode: both;
+    will-change: transform, opacity;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(12px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 .notification {
     font-weight: 500;
     border-left: 4px solid rgba(255, 255, 255, 0.2);

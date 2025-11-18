@@ -3,8 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Cart - myBru</title>
+    <title>My Orders - myBru</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .order-card { border: 1px solid #e0e0e0; padding: 12px; margin: 12px 0; border-radius:6px; }
+        .order-header { display:flex; justify-content:space-between; align-items:center; }
+        .order-items { margin-top:8px; }
+        .order-item { padding:6px 0; border-bottom:1px dashed #eee; }
+        .order-status { font-weight:600; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -17,16 +24,16 @@
                 <li><a href="generic.html">Generic Brews</a></li>
                 <li><a href="exclusive.html">Membership</a></li>
                 <li><a href="about.html">About Us</a></li>
-                <li><a href="orders.html">Orders</a></li>
-                <li><a href="cart.html" class="nav-active">Cart</a></li>
+                <li><a href="cart.html">Cart</a></li>
+                <li><a href="checkout.html">Checkout</a></li>
+                <li><a href="orders.html" class="nav-active">Orders</a></li>
             </ul>
         </nav>
 
         <header>
             <div class="header-top">
                 <div>
-                    <h1>myBru <small>with a touch of couture!</small></h1>
-                    <p>Master the Art of Intentional Brewing for different and diverse occasions, mood strikes, special craving, body chemistry, health target and allergies. Whether you are looking for rich tea experience; wellness in a cup of tea or just to unwind, myBrub guides your flavorful journey from cup to consciousness.</p>
+                    <h1>myBru Orders</h1>
                 </div>
                 <div class="header-right">
                     <div class="cart-container">
@@ -49,39 +56,25 @@
             </div>
         </header>
 
-        <!-- nav moved above header for mobile-first ordering -->
-
         <main>
-            <section id="cart-details">
-                <h2>Your Shopping Cart</h2>
-                <div id="cart-items-container">
-                    <!-- Cart items will be loaded here dynamically -->
-                    <p>Your cart is empty.</p>
-                </div>
-                <div id="cart-summary">
-                    <h3>Total: $<span id="cart-total">0.00</span></h3>
-                    <a href="checkout.html" id="checkout-btn" class="add-to-cart-btn">Proceed to Checkout</a>
+            <section id="orders-section">
+                <h2>Your Orders</h2>
+                <div id="orders-container">
+                    <p>Loading orders...</p>
                 </div>
             </section>
         </main>
-
     </div>
+
     <footer class="site-footer">
         <div class="container">
-            <div class="footer-content">
-                <div class="footer-column">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="consultation.html">Book a Consultation</a></li>
-                        <li><a href="subscription.html">Subscriptions</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-copyright">
-                <p>&copy; 2024 myBru. All rights reserved.</p>
-            </div>
+            <p>&copy; 2024 myBru</p>
         </div>
     </footer>
+
     <script src="js/main.js"></script>
+    <script>
+        // orders.html specific script runs inside main.js
+    </script>
 </body>
 </html>

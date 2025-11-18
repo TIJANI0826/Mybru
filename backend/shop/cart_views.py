@@ -6,6 +6,10 @@ from django.db import transaction
 
 from .models import Cart, CartItem, Tea
 from .serializers import CartSerializer, CartItemSerializer
+from .models import Order, OrderItem, PickupLocation, DeliveryAddress
+from .serializers import OrderSerializer, DeliveryAddressSerializer, PickupLocationSerializer
+from django.shortcuts import get_object_or_404
+from decimal import Decimal
 
 
 @api_view(['GET'])
@@ -163,3 +167,90 @@ def clear_cart(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Cart.DoesNotExist:
         return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def place_order(request):
+    """Create an Order from the user's cart and attach delivery or pickup info.
+
+    Payload options:
+    - delivery_type: 'pickup' or 'delivery'
+    - If pickup: provide 'pickup_id' (PickupLocation id)
+    - If delivery: provide either 'delivery_address_id' or address fields ('address_line1', etc.)
+    """
+    user = request.user
+    try:
+        cart = Cart.objects.get(user=user)
+    except Cart.DoesNotExist:
+        return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not cart.items.exists():
+        return Response({'error': 'Cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+    data = request.data or {}
+    delivery_type = data.get('delivery_type', 'pickup')
+    pickup_id = data.get('pickup_id')
+    delivery_address_id = data.get('delivery_address_id')
+
+    # Calculate subtotal (note: stock already adjusted during cart operations)
+    subtotal = Decimal('0.00')
+    for ci in cart.items.all():
+        subtotal += (ci.tea.price * ci.quantity)
+
+    delivery_fee = Decimal('0.00')
+    pickup_name = None
+
+    if delivery_type == 'pickup' and pickup_id:
+        pickup = get_object_or_404(PickupLocation, id=pickup_id)
+        pickup_name = f"{pickup.name} - {pickup.branch}"
+        # pickup.delivery_fee is a DecimalField -> keep as Decimal
+        delivery_fee = (pickup.delivery_fee or Decimal('0.00'))
+    else:
+        # delivery path: try to resolve delivery address
+        if delivery_address_id:
+            addr = get_object_or_404(DeliveryAddress, id=delivery_address_id, user=user)
+        else:
+            # create a delivery address for the user from supplied fields
+            addr_data = {
+                'address_line1': data.get('address_line1'),
+                'address_line2': data.get('address_line2'),
+                'city': data.get('city'),
+                'state': data.get('state'),
+                'zip_code': data.get('zip_code'),
+            }
+            addr_serializer = DeliveryAddressSerializer(data=addr_data)
+            if addr_serializer.is_valid():
+                addr = addr_serializer.save(user=user)
+            else:
+                return Response({'error': 'Invalid delivery address', 'details': addr_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        # copy address fields to order and optionally set a delivery fee
+        # convert any provided delivery_fee to Decimal
+        delivery_fee = Decimal(str(data.get('delivery_fee', '0')))
+
+    total_price = subtotal + (delivery_fee or Decimal('0.00'))
+
+    # Create order without modifying tea stock (stock already adjusted when adding to cart)
+    order = Order.objects.create(
+        user=user,
+        total_price=total_price,
+        delivery_type=delivery_type,
+        pickup_location=pickup_name if pickup_name else (addr.address_line1 if delivery_type == 'delivery' else ''),
+        delivery_address_line1=(addr.address_line1 if delivery_type == 'delivery' else None),
+        delivery_address_line2=(addr.address_line2 if delivery_type == 'delivery' else None),
+        delivery_city=(addr.city if delivery_type == 'delivery' else None),
+        delivery_state=(addr.state if delivery_type == 'delivery' else None),
+        delivery_zip_code=(addr.zip_code if delivery_type == 'delivery' else None),
+        delivery_fee=delivery_fee
+    )
+
+    # Move cart items into order items
+    for ci in cart.items.all():
+        OrderItem.objects.create(order=order, tea=ci.tea, quantity=ci.quantity)
+
+    # Clear the cart (do not restore stock)
+    cart.items.all().delete()
+
+    serializer = OrderSerializer(order)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)

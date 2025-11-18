@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Tea, Ingredient, Cart, CartItem, Order, OrderItem, Membership, Subscription, Profile
+from .models import Tea, Ingredient, Cart, CartItem, Order, OrderItem, Membership, Subscription, Profile, PickupLocation, DeliveryAddress
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,7 +30,7 @@ class CartSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    tea = serializers.PrimaryKeyRelatedField(queryset=Tea.objects.all())
+    tea = TeaSerializer(read_only=True)
     order = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -76,6 +76,19 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = '__all__'
+
+
+class PickupLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PickupLocation
+        fields = '__all__'
+
+
+class DeliveryAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryAddress
+        fields = ['id', 'user', 'address_line1', 'address_line2', 'city', 'state', 'zip_code', 'is_default', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
 
 
 # Authentication Serializers

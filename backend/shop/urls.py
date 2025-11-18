@@ -10,6 +10,7 @@ router.register(r'ingredients', views.IngredientViewSet)
 router.register(r'carts', views.CartViewSet)
 router.register(r'orders', views.OrderViewSet)
 router.register(r'memberships', views.MembershipViewSet)
+router.register(r'pickup-locations', views.PickupLocationViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -27,4 +28,6 @@ urlpatterns = [
     path('cart/update/', cart_views.update_cart_item, name='update_cart_item'),
     path('cart/remove/', cart_views.remove_from_cart, name='remove_from_cart'),
     path('cart/clear/', cart_views.clear_cart, name='clear_cart'),
+    path('checkout/place-order/', cart_views.place_order, name='place_order'),
+    path('delivery-addresses/', views.DeliveryAddressViewSet.as_view({'get': 'list', 'post': 'create'}), name='delivery_addresses'),
 ]

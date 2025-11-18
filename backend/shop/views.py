@@ -6,31 +6,62 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 
-from .models import Tea, Ingredient, Cart, Order, Membership
-from .serializers import TeaSerializer, IngredientSerializer, CartSerializer, OrderSerializer, MembershipSerializer, CustomUserSerializer, CustomUserCreateSerializer
+from .models import Tea, Ingredient, Cart, Order, Membership, PickupLocation
+from .models import DeliveryAddress
+from .serializers import TeaSerializer, IngredientSerializer, CartSerializer, OrderSerializer, MembershipSerializer, CustomUserSerializer, CustomUserCreateSerializer, PickupLocationSerializer, DeliveryAddressSerializer
 
 class TeaViewSet(viewsets.ModelViewSet):
     queryset = Tea.objects.all()
     serializer_class = TeaSerializer
+    permission_classes = [AllowAny]
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = [AllowAny]
 
 class CartViewSet(viewsets.ModelViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+    
+    def get_queryset(self):
+        user = self.request.user
+        # staff users can see all orders; regular users only their own
+        if user.is_staff or user.is_superuser:
+            return Order.objects.all()
+        return Order.objects.filter(user=user)
 
 class MembershipViewSet(viewsets.ModelViewSet):
     queryset = Membership.objects.all()
     serializer_class = MembershipSerializer
+
+
+class PickupLocationViewSet(viewsets.ModelViewSet):
+    queryset = PickupLocation.objects.all()
+    serializer_class = PickupLocationSerializer
+    permission_classes = [AllowAny]
+
+
+class DeliveryAddressViewSet(viewsets.ModelViewSet):
+    queryset = DeliveryAddress.objects.all()
+    serializer_class = DeliveryAddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def get_queryset(self):
+        # limit addresses to the authenticated user
+        return DeliveryAddress.objects.filter(user=self.request.user)
 
 
 # Authentication Views
