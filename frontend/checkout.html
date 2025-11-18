@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - myBru</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="site-nav">
+            <button id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="hamburger"></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="generic.html">Generic Brews</a></li>
+                <li><a href="exclusive.html">Membership</a></li>
+                <li><a href="about.html">About Us</a></li>
+                <li><a href="cart.html">Cart</a></li>
+                <li><a href="checkout.html" class="nav-active">Checkout</a></li>
+            </ul>
+        </nav>
+
+        <header>
+            <div class="header-top">
+                <div>
+                    <h1>myBru <small>with a touch of couture!</small></h1>
+                    <p>Master the Art of Intentional Brewing for different and diverse occasions, mood strikes, special craving, body chemistry, health target and allergies. Whether you are looking for rich tea experience; wellness in a cup of tea or just to unwind, myBrub guides your flavorful journey from cup to consciousness.</p>
+                </div>
+                <div class="header-right">
+                    <div class="cart-container">
+                        <a href="cart.html" id="cart-icon" title="View Cart">
+                            <img src="images/cart-icon.png" alt="Cart" width="30">
+                            <span id="cart-counter">0</span>
+                        </a>
+                    </div>
+                    <div class="auth-section">
+                        <div id="user-menu" class="user-menu" style="display: none;">
+                            <span id="user-name" class="user-name"></span>
+                            <button id="logout-btn" class="btn-logout">Logout</button>
+                        </div>
+                        <div id="auth-links" class="auth-links">
+                            <a href="login.html" class="btn-login">Login</a>
+                            <a href="signup.html" class="btn-signup">Sign Up</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- nav moved above header for mobile-first ordering -->
+
+        <main>
+            <section id="checkout-details">
+                <h2>Checkout</h2>
+
+                <div id="cart-summary-checkout">
+                    <h3>Order Summary</h3>
+                    <div id="checkout-cart-items">
+                        <!-- Cart items will be loaded here dynamically -->
+                    </div>
+                    <p>Subtotal: $<span id="checkout-subtotal">0.00</span></p>
+                </div>
+
+                <div id="delivery-options">
+                    <h3>Delivery Options</h3>
+                    <label>
+                        <input type="radio" name="delivery-type" value="pickup" checked> Pickup
+                    </label>
+                    <label>
+                        <input type="radio" name="delivery-type" value="delivery"> Delivery
+                    </label>
+
+                    <div id="pickup-location" class="delivery-option-details">
+                        <h4>Choose Pickup Location:</h4>
+                        <select id="pickup-select">
+                            <option value="store-a">Store A (123 Main St)</option>
+                            <option value="store-b">Store B (456 Oak Ave)</option>
+                        </select>
+                    </div>
+
+                    <div id="delivery-address" class="delivery-option-details" style="display: none;">
+                        <h4>Delivery Address:</h4>
+                        <input type="text" id="address-line1" placeholder="Address Line 1">
+                        <input type="text" id="address-line2" placeholder="Address Line 2 (Optional)">
+                        <input type="text" id="city" placeholder="City">
+                        <input type="text" id="state" placeholder="State">
+                        <input type="text" id="zip-code" placeholder="Zip Code">
+                        <p>Delivery Fee: $<span id="delivery-fee">0.00</span></p>
+                    </div>
+                </div>
+
+                <div id="final-total">
+                    <h3>Total: $<span id="final-order-total">0.00</span></h3>
+                    <button id="place-order-btn" class="add-to-cart-btn">Place Order</button>
+                </div>
+            </section>
+        </main>
+
+    </div>
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="consultation.html">Book a Consultation</a></li>
+                        <li><a href="subscription.html">Subscriptions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2024 myBru. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="js/main.js"></script>
+</body>
+</html>

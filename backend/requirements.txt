@@ -1,0 +1,10 @@
+Django==5.2.8
+djangorestframework==3.16.1
+djoser==2.3.3
+django-cors-headers==4.9.0
+python-decouple==3.8
+google-auth-oauthlib==1.2.3
+PyJWT==2.10.1
+social-auth-app-django==5.6.0
+social-auth-core==4.8.1
+google-auth==2.41.1

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exclusive Membership - myBru</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="site-nav">
+            <button id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="hamburger"></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="generic.html">Generic Brews</a></li>
+                <li><a href="exclusive.html" class="nav-active">Membership</a></li>
+                <li><a href="about.html">About Us</a></li>
+            </ul>
+        </nav>
+
+        <header>
+            <div class="header-top">
+                <div>
+                    <h1>myBru <small>with a touch of couture!</small></h1>
+                    <p>Master the Art of Intentional Brewing for different and diverse occasions, mood strikes, special craving, body chemistry, health target and allergies. Whether you are looking for rich tea experience; wellness in a cup of tea or just to unwind, myBrub guides your flavorful journey from cup to consciousness.</p>
+                </div>
+                <div class="header-right">
+                    <div class="cart-container">
+                        <a href="cart.html" id="cart-icon" title="View Cart">
+                            <img src="images/cart-icon.png" alt="Cart" width="30">
+                            <span id="cart-counter">0</span>
+                        </a>
+                    </div>
+                    <div class="auth-section">
+                        <div id="user-menu" class="user-menu" style="display: none;">
+                            <span id="user-name" class="user-name"></span>
+                            <button id="logout-btn" class="btn-logout">Logout</button>
+                        </div>
+                        <div id="auth-links" class="auth-links">
+                            <a href="login.html" class="btn-login">Login</a>
+                            <a href="signup.html" class="btn-signup">Sign Up</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- nav moved above header for mobile-first ordering -->
+
+        <main>
+            <section id="exclusive-options">
+                <h2>EXCLUSIVE— For Registered Members</h2>
+                <article id="bespoke">
+                    <h4>Bespoke — Couture: For the crafted.</h4>
+                    <p>LET’S mirror your essence and tailor YOUR BREW to fit your individual body type, taste, energy, mood, season and health requirements.</p>
+                </article>
+                <article id="natural-protocol">
+                    <h4>Natural Protocol: For the aligned — from sip to self-care.</h4>
+                    <p>Elevate your lifestyle with natural live hacks that rhymes with the season, your reason, personality, body type, taste, mood and health target. A holistic blueprint for intentional living, including but not limited to:</p>
+                    <ul>
+                        <li>Integrated adaptogenic herbs, lunar cycles, and elemental balance.</li>
+                        <li>Mind over matter.</li>
+                        <li>Diet protocol</li>
+                        <li>Life-style changes</li>
+                        <li>Other self-healing techniques</li>
+                    </ul>
+                </article>
+            </section>
+        </main>
+    </div>
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="consultation.html">Book a Consultation</a></li>
+                        <li><a href="subscription.html">Subscriptions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2024 myBru. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="js/main.js"></script>
+</body>
+</html>
