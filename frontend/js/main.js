@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function logout() {
         const token = localStorage.getItem('token');
-        const API_URL = 'http://localhost:8000/api';
+                const API_URL = 'https://mybru.onrender.com/api';
 
         if (token) {
             // Call logout endpoint to invalidate token on backend
@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    const API_URL = 'http://localhost:8000/api';
+    const API_URL = 'https://mybru.onrender.com/api';
     const BACKEND_BASE = API_URL.replace(/\/api\/?$/, '');
 
     function getAuthHeaders() {

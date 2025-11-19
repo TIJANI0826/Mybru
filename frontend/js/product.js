@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    const API_URL = 'http://localhost:8000/api';
+    const API_URL = 'https://mybru.onrender.com/api';
     const BACKEND_BASE = API_URL.replace(/\/api\/?$/, '');
     const container = document.getElementById('product-detail');
 
