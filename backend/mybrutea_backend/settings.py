@@ -73,6 +73,7 @@ CORS_ALLOW_METHODS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -150,7 +151,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Media files (user-uploaded)
 MEDIA_URL = '/media/'
@@ -238,3 +239,8 @@ SOCIAL_AUTH_PIPELINE = (
 # Frontend URL for redirects
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 LOGIN_REDIRECT_URL = f'{FRONTEND_URL}/'
+
+STATIC_ROOT = BASE_DIR / 'static'
+
+# Use WhiteNoise to serve static files with Gunicorn
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
