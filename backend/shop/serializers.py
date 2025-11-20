@@ -17,6 +17,7 @@ class TeaSerializer(serializers.ModelSerializer):
 
 class CartItemSerializer(serializers.ModelSerializer):
     tea = TeaSerializer(read_only=True)
+    ingredient = IngredientSerializer(read_only=True)
 
     class Meta:
         model = CartItem
@@ -31,6 +32,7 @@ class CartSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     tea = TeaSerializer(read_only=True)
+    ingredient = IngredientSerializer(read_only=True)
     order = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:

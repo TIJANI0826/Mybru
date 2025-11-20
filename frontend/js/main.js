@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Get elements that might be on generic.html
     const teaGalleryContainer = document.getElementById('tea-gallery-container');
     const teaGallerySection = document.getElementById('tea-gallery-section');
+    const ingredientContainer = document.getElementById('ingredient-container');
+    const ingredientCatalogSection = document.getElementById('ingredient-catalog-section');
 
     // Get elements that might be on cart.html
     const cartItemsContainer = document.getElementById('cart-items-container');
@@ -465,6 +467,104 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (teaGalleryContainer) {
                 teaGalleryContainer.innerHTML = '<p>Failed to load teas. Please try again later.</p>';
             }
+        }
+    }
+
+    async function fetchIngredients() {
+        try {
+            const response = await fetch(`${API_URL}/ingredients/`, { headers: getAuthHeaders() });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const ingredients = await response.json();
+            displayIngredients(ingredients);
+        } catch (error) {
+            console.error('Failed to fetch ingredients:', error);
+            if (ingredientContainer) ingredientContainer.innerHTML = '<p>Failed to load ingredients. Please try again later.</p>';
+        }
+    }
+
+    function displayIngredients(items) {
+        if (!ingredientContainer) return;
+        ingredientContainer.innerHTML = '';
+
+        items.forEach((ing, i) => {
+            const card = document.createElement('div');
+            card.classList.add('tea-card', 'slide-down');
+            card.setAttribute('data-ingredient-id', ing.id);
+            card.style.animationDelay = `${i * 80}ms`;
+
+            const displayedStock = ing.stock;
+            card.innerHTML = `
+                <div class="tea-card-image">
+                    <img src="${(ing.image ? (ing.image.startsWith('http') ? ing.image : BACKEND_BASE + ing.image) : 'https://via.placeholder.com/200x200')}" alt="${ing.name}">
+                </div>
+                <div class="tea-card-content">
+                    <h4>${ing.name}</h4>
+                    <p>${ing.description}</p>
+                    <div class="tea-card-footer">
+                        <div class="tea-card-price">$${ing.price}</div>
+                        <div class="tea-card-stock" data-stock="${displayedStock}">Stock: ${displayedStock}</div>
+                    </div>
+                    <button class="add-ingredient-btn" data-ingredient-id="${ing.id}" data-ingredient-name="${ing.name}">Add to Cart</button>
+                </div>
+            `;
+
+            ingredientContainer.appendChild(card);
+        });
+
+        // hook up add buttons
+        ingredientContainer.querySelectorAll('.add-ingredient-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const id = parseInt(e.target.getAttribute('data-ingredient-id'));
+                const name = e.target.getAttribute('data-ingredient-name');
+                e.target.disabled = true;
+                e.target.textContent = 'Adding...';
+                await addIngredientToCartWithNotification(id, name, 1);
+                e.target.disabled = false;
+                e.target.textContent = 'Add to Cart';
+            });
+        });
+    }
+
+    async function addIngredientToCartWithNotification(ingredientId, ingredientName, quantity = 1) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            displayNotification('Please log in to add items to cart', 'error');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/cart/add/`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ ingredient_id: ingredientId, quantity })
+            });
+
+            if (response.ok) {
+                const backendCart = await response.json();
+                syncLocalCartWithBackend(backendCart);
+                // Refresh ingredient to update stock display
+                try {
+                    const ingResp = await fetch(`${API_URL}/ingredients/${ingredientId}/`, { headers: getAuthHeaders() });
+                    if (ingResp.ok) {
+                        const updated = await ingResp.json();
+                        // update any stock displays
+                        updateStockDisplay(ingredientId, updated.stock);
+                    }
+                } catch (err) { console.error('Failed to refresh ingredient:', err); }
+
+                displayNotification(`✓ Added ${quantity} × ${ingredientName} to cart`, 'success');
+                updateCartCounter();
+                return;
+            } else {
+                const err = await response.json();
+                displayNotification(`Error: ${err.error || 'Could not add to cart'}`, 'error');
+                return;
+            }
+        } catch (err) {
+            console.error('Error adding ingredient to cart:', err);
+            displayNotification('Error adding to cart', 'error');
         }
     }
 
@@ -865,9 +965,77 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    // Fetch and display teas on generic page
-    if (teaGallerySection) {
+    // Gallery toggle: load teas only when user requests (keeps page lighter)
+    const showGalleryBtn = document.getElementById('show-gallery-btn');
+    let galleryLoaded = false;
+    if (showGalleryBtn && teaGallerySection) {
+        console.debug('Gallery toggle button and section found');
+        // Ensure initial button state
+        if (!showGalleryBtn.getAttribute('aria-expanded')) showGalleryBtn.setAttribute('aria-expanded', 'false');
+
+        showGalleryBtn.addEventListener('click', async () => {
+            try {
+                console.debug('Gallery toggle clicked');
+                const expanded = showGalleryBtn.getAttribute('aria-expanded') === 'true';
+                if (!expanded) {
+                    // Show gallery
+                    teaGallerySection.style.display = 'block';
+                    showGalleryBtn.setAttribute('aria-expanded', 'true');
+                    showGalleryBtn.textContent = 'Hide Signature Blends';
+
+                    if (!galleryLoaded) {
+                        await fetchTeas();
+                        galleryLoaded = true;
+                    }
+
+                    // Smoothly scroll gallery into view
+                    teaGallerySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // Hide gallery
+                    teaGallerySection.style.display = 'none';
+                    showGalleryBtn.setAttribute('aria-expanded', 'false');
+                    showGalleryBtn.textContent = 'Show Signature Blends';
+                }
+            } catch (err) {
+                console.error('Gallery toggle handler error:', err);
+                try { displayNotification('Gallery could not be toggled. See console.'); } catch (e) {}
+            }
+        });
+    } else if (teaGallerySection) {
+        // If the button isn't present (older pages), fall back to the previous behavior
         fetchTeas();
+    }
+
+    // Ingredient catalog toggle
+    const showIngredientsBtn = document.getElementById('show-ingredients-btn');
+    let ingredientsLoaded = false;
+    if (showIngredientsBtn && ingredientCatalogSection) {
+        if (!showIngredientsBtn.getAttribute('aria-expanded')) showIngredientsBtn.setAttribute('aria-expanded', 'false');
+        showIngredientsBtn.addEventListener('click', async () => {
+            try {
+                const expanded = showIngredientsBtn.getAttribute('aria-expanded') === 'true';
+                if (!expanded) {
+                    ingredientCatalogSection.style.display = 'block';
+                    showIngredientsBtn.setAttribute('aria-expanded', 'true');
+                    showIngredientsBtn.textContent = 'Hide Ingredients Catalog';
+                    if (!ingredientsLoaded) {
+                        await fetchIngredients();
+                        ingredientsLoaded = true;
+                    }
+                    ingredientCatalogSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    ingredientCatalogSection.style.display = 'none';
+                    showIngredientsBtn.setAttribute('aria-expanded', 'false');
+                    showIngredientsBtn.textContent = 'Show Ingredients Catalog';
+                }
+            } catch (err) {
+                console.error('Ingredient toggle error:', err);
+                try { displayNotification('Could not toggle ingredients. See console.'); } catch(e){}
+            }
+        });
+    } else if (ingredientCatalogSection) {
+        // fallback: load immediately
+        fetchIngredients();
     }
 
     // Initialize cart counter on all pages

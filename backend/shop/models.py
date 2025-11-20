@@ -42,10 +42,13 @@ class Cart(models.Model):
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
-    tea = models.ForeignKey(Tea, on_delete=models.CASCADE)
+    tea = models.ForeignKey(Tea, on_delete=models.CASCADE, null=True, blank=True)
+    ingredient = models.ForeignKey('Ingredient', on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
+        if self.ingredient:
+            return f"{self.quantity} of {self.ingredient.name}"
         return f"{self.quantity} of {self.tea.name}"
 
 class Order(models.Model):
@@ -67,10 +70,13 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
-    tea = models.ForeignKey(Tea, on_delete=models.CASCADE)
+    tea = models.ForeignKey(Tea, on_delete=models.CASCADE, null=True, blank=True)
+    ingredient = models.ForeignKey('Ingredient', on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
+        if self.ingredient:
+            return f"{self.quantity} of {self.ingredient.name} in order {self.order.id}"
         return f"{self.quantity} of {self.tea.name} in order {self.order.id}"
 
 class Membership(models.Model):
