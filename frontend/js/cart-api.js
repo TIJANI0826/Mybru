@@ -6,7 +6,7 @@ async function getBackendCart() {
     if (!token) return null;
     
     try {
-        const response = await fetch('https://mybru.onrender.com/api/cart/', {
+        const response = await fetch('https://tjib26.pythonanywhere.com/api/cart/', {
             method: 'GET',
             headers: getAuthHeaders()
         });
@@ -29,7 +29,7 @@ async function addToBackendCart(teaId, quantity = 1) {
     }
     
     try {
-        const response = await fetch('https://mybru.onrender.com/api/cart/add/', {
+        const response = await fetch('https://tjib26.pythonanywhere.com/api/cart/add/', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ tea_id: teaId, quantity: quantity })
@@ -55,7 +55,7 @@ async function updateBackendCartItem(cartItemId, quantity) {
     if (!token) return null;
     
     try {
-        const response = await fetch('https://mybru.onrender.com/api/cart/update/', {
+        const response = await fetch('https://tjib26.pythonanywhere.com/api/cart/update/', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ cart_item_id: cartItemId, quantity: quantity })
@@ -81,7 +81,7 @@ async function removeFromBackendCart(cartItemId) {
     if (!token) return null;
     
     try {
-        const response = await fetch('https://mybru.onrender.com/api/cart/remove/', {
+        const response = await fetch('https://tjib26.pythonanywhere.com/api/cart/remove/', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ cart_item_id: cartItemId })
@@ -107,7 +107,7 @@ async function clearBackendCart() {
     if (!token) return null;
     
     try {
-        const response = await fetch('https://mybru.onrender.com/api/cart/clear/', {
+        const response = await fetch('https://tjib26.pythonanywhere.com/api/cart/clear/', {
             method: 'POST',
             headers: getAuthHeaders()
         });

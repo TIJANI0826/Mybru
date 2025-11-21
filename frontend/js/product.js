@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    const API_URL = 'https://mybru.onrender.com/api';
+    const API_URL = 'https://tjib26.pythonanywhere.com/api';
     const BACKEND_BASE = API_URL.replace(/\/api\/?$/, '');
     const container = document.getElementById('product-detail');
 

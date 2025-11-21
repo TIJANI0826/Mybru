@@ -55,7 +55,7 @@ async function addToCartWithNotification(teaId, teaName, quantity = 1) {
     if (token) {
         // Use backend API if logged in
         try {
-            const response = await fetch('https://mybru.onrender.com/api/cart/add/', {
+            const response = await fetch('https://tjib26.pythonanywhere.com/api/cart/add/', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Token ${token}`,
@@ -71,7 +71,7 @@ async function addToCartWithNotification(teaId, teaName, quantity = 1) {
                 syncLocalCartWithBackend(backendCart);
                 
                 // Get updated tea data
-                const teaResponse = await fetch(`https://mybru.onrender.com/api/teas/${teaId}/`, {
+                const teaResponse = await fetch(`https://tjib26.pythonanywhere.com/api/teas/${teaId}/`, {
                     headers: {
                         'Authorization': `Token ${token}`,
                         'Content-Type': 'application/json',
