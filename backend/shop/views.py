@@ -6,9 +6,9 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 
-from .models import Tea, Ingredient, Cart, Order, Membership, PickupLocation
+from .models import Tea, Ingredient, Cart, Order, Membership, PickupLocation, IngredientCategory
 from .models import DeliveryAddress
-from .serializers import TeaSerializer, IngredientSerializer, CartSerializer, OrderSerializer, MembershipSerializer, CustomUserSerializer, CustomUserCreateSerializer, PickupLocationSerializer, DeliveryAddressSerializer
+from .serializers import TeaSerializer, IngredientSerializer, CartSerializer, OrderSerializer, MembershipSerializer, CustomUserSerializer, CustomUserCreateSerializer, PickupLocationSerializer, DeliveryAddressSerializer, IngredientCategorySerializer
 
 class TeaViewSet(viewsets.ModelViewSet):
     queryset = Tea.objects.all()
@@ -48,6 +48,12 @@ class MembershipViewSet(viewsets.ModelViewSet):
 class PickupLocationViewSet(viewsets.ModelViewSet):
     queryset = PickupLocation.objects.all()
     serializer_class = PickupLocationSerializer
+    permission_classes = [AllowAny]
+
+
+class IngredientCategoryViewSet(viewsets.ModelViewSet):
+    queryset = IngredientCategory.objects.all()
+    serializer_class = IngredientCategorySerializer
     permission_classes = [AllowAny]
 
 

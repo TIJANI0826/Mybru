@@ -971,6 +971,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         for (const cartItem of backendCart.items) {
             const tea = cartItem.tea;
+            const ingredient = cartItem.ingredient;
             if (tea) {
                 const itemTotal = tea.price * cartItem.quantity;
                 subtotal += itemTotal;
@@ -984,6 +985,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // store tea for potential later reference
                 teaData[tea.id] = tea;
+            } else if (ingredient) {
+                const itemTotal = ingredient.price * cartItem.quantity;
+                subtotal += itemTotal;
+
+                const checkoutItemElement = document.createElement('div');
+                checkoutItemElement.classList.add('checkout-item');
+                checkoutItemElement.innerHTML = `
+                    <p>${ingredient.name} x ${cartItem.quantity} - <span class="price" data-amount-ngn="${itemTotal}"></span></p>
+                `;
+                checkoutCartItems.appendChild(checkoutItemElement);
             }
         }
 

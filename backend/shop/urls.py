@@ -7,6 +7,7 @@ from . import cart_views
 router = DefaultRouter()
 router.register(r'teas', views.TeaViewSet)
 router.register(r'ingredients', views.IngredientViewSet)
+router.register(r'ingredient-categories', views.IngredientCategoryViewSet)
 router.register(r'carts', views.CartViewSet)
 router.register(r'orders', views.OrderViewSet)
 router.register(r'memberships', views.MembershipViewSet)

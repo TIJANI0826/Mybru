@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Tea, Ingredient, Cart, CartItem, Order, OrderItem, Membership, Subscription, Profile, PickupLocation, DeliveryAddress
+from .models import IngredientCategory
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -84,6 +85,12 @@ class PickupLocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = PickupLocation
         fields = '__all__'
+
+
+class IngredientCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IngredientCategory
+        fields = ['id', 'name', 'description']
 
 
 class DeliveryAddressSerializer(serializers.ModelSerializer):
