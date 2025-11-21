@@ -369,6 +369,109 @@ document.addEventListener('DOMContentLoaded', async () => {
         return headers;
     }
 
+    // Format currency for Nigeria
+    function formatCurrency(value) {
+        const num = Number(value) || 0;
+        try {
+            return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(num);
+        } catch (e) {
+            // Fallback
+            return `₦${num.toFixed(2)}`;
+        }
+    }
+
+    // --- Currency conversion support ---
+    window._exchangeRates = null;
+    window._exchangeRatesFetchedAt = null;
+    const EXCHANGE_API = 'https://api.exchangerate.host/latest';
+
+    function detectCurrencyFromLocale() {
+        const locale = navigator.language || 'en-NG';
+        const region = (locale.split('-')[1] || '').toUpperCase();
+        const map = {
+            'US': 'USD', 'GB': 'GBP', 'EU': 'EUR', 'NG': 'NGN', 'CA': 'CAD', 'AU': 'AUD', 'DE': 'EUR', 'FR': 'EUR'
+        };
+        if (region && map[region]) return map[region];
+        // fallback by language
+        const lang = locale.split('-')[0];
+        const langMap = { 'en': 'USD', 'fr': 'EUR' };
+        return localStorage.getItem('currency') || (langMap[lang] || 'NGN');
+    }
+
+    function getPreferredCurrency() {
+        return localStorage.getItem('currency') || detectCurrencyFromLocale();
+    }
+
+    async function fetchExchangeRates(base = 'NGN') {
+        // Cache for 1 hour
+        const now = Date.now();
+        if (window._exchangeRates && window._exchangeRatesBase === base && (now - (window._exchangeRatesFetchedAt || 0)) < 3600 * 1000) {
+            return window._exchangeRates;
+        }
+        try {
+            const resp = await fetch(`${EXCHANGE_API}?base=${base}`);
+            if (!resp.ok) throw new Error('Failed to fetch rates');
+            const data = await resp.json();
+            window._exchangeRates = data.rates || {};
+            window._exchangeRatesBase = base;
+            window._exchangeRatesFetchedAt = Date.now();
+            return window._exchangeRates;
+        } catch (err) {
+            console.error('Exchange rates fetch error:', err);
+            return null;
+        }
+    }
+
+    async function convertAndFormat(amountNgn, targetCurrency) {
+        const base = 'NGN';
+        const num = Number(amountNgn) || 0;
+        const userLocale = navigator.language || 'en-NG';
+        if (!targetCurrency || targetCurrency === base) {
+            try {
+                return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(num);
+            } catch (e) { return `₦${num.toFixed(2)}`; }
+        }
+
+        const rates = await fetchExchangeRates(base);
+        if (!rates || !rates[targetCurrency]) {
+            // fallback to NGN formatting
+            try { return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(num); } catch (e) { return `₦${num.toFixed(2)}`; }
+        }
+        const rate = Number(rates[targetCurrency]) || 0;
+        const converted = Number(num) * rate;
+        try {
+            return new Intl.NumberFormat(userLocale, { style: 'currency', currency: targetCurrency }).format(converted);
+        } catch (e) {
+            // Fallback simple formatting — ensure numeric value before toFixed
+            return `${targetCurrency} ${Number(converted || 0).toFixed(2)}`;
+        }
+    }
+
+    // Update all price elements on the page according to preferred currency
+    window.updatePriceElements = async function () {
+        const preferred = getPreferredCurrency();
+        const priceEls = document.querySelectorAll('.price[data-amount-ngn]');
+        if (!priceEls || priceEls.length === 0) return;
+        // Pre-fetch rates in background
+        if (preferred && preferred !== 'NGN') {
+            fetchExchangeRates('NGN');
+        }
+        for (const el of priceEls) {
+            const amt = el.getAttribute('data-amount-ngn');
+            // show NGN immediately, then replace when conversion done
+            try {
+                el.textContent = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(Number(amt || 0));
+            } catch (e) {
+                el.textContent = `₦${Number(amt || 0).toFixed(2)}`;
+            }
+            if (preferred && preferred !== 'NGN') {
+                convertAndFormat(amt, preferred).then(formatted => {
+                    el.textContent = formatted;
+                }).catch(err => console.error('Price conversion error:', err));
+            }
+        }
+    };
+
     async function addToCartWithNotification(teaId, teaName, quantity = 1) {
         const token = localStorage.getItem('token');
         
@@ -427,14 +530,88 @@ document.addEventListener('DOMContentLoaded', async () => {
         cart = [];
         if (backendCart.items) {
             backendCart.items.forEach(item => {
-                cart.push({
-                    teaId: item.tea.id,
-                    quantity: item.quantity,
-                    cartItemId: item.id
-                });
+                if (item.tea) {
+                    cart.push({
+                        type: 'tea',
+                        teaId: item.tea.id,
+                        quantity: item.quantity,
+                        cartItemId: item.id
+                    });
+                } else if (item.ingredient) {
+                    cart.push({
+                        type: 'ingredient',
+                        ingredientId: item.ingredient.id,
+                        quantity: item.quantity,
+                        cartItemId: item.id
+                    });
+                }
             });
         }
         saveCart();
+    }
+
+    // Update cart item by cart_item id (works for tea or ingredient)
+    async function updateCartItemById(cartItemId, newQuantity) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            displayNotification('Authentication required for cart updates', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/cart/update/`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ cart_item_id: cartItemId, quantity: newQuantity })
+            });
+
+            if (response.ok) {
+                const backendCart = await response.json();
+                syncLocalCartWithBackend(backendCart);
+                // Refresh entire cart UI
+                if (window.location.pathname.includes('cart.html')) renderCartPage();
+                if (window.location.pathname.includes('checkout.html')) renderCheckoutPage();
+                updateCartCounter();
+                return;
+            } else {
+                const err = await response.json();
+                displayNotification(`Error: ${err.error || 'Could not update cart'}`, 'error');
+            }
+        } catch (err) {
+            console.error('Error updating cart item:', err);
+            displayNotification('Error updating cart', 'error');
+        }
+    }
+
+    async function removeCartItemById(cartItemId) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            displayNotification('Authentication required for cart updates', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/cart/remove/`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ cart_item_id: cartItemId })
+            });
+
+            if (response.ok) {
+                const backendCart = await response.json();
+                syncLocalCartWithBackend(backendCart);
+                if (window.location.pathname.includes('cart.html')) renderCartPage();
+                if (window.location.pathname.includes('checkout.html')) renderCheckoutPage();
+                updateCartCounter();
+                return;
+            } else {
+                const err = await response.json();
+                displayNotification(`Error: ${err.error || 'Could not remove from cart'}`, 'error');
+            }
+        } catch (err) {
+            console.error('Error removing cart item:', err);
+            displayNotification('Error removing item from cart', 'error');
+        }
     }
 
     async function fetchTeaDetails(teaId) {
@@ -501,7 +678,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h4>${ing.name}</h4>
                     <p>${ing.description}</p>
                     <div class="tea-card-footer">
-                        <div class="tea-card-price">$${ing.price}</div>
+                        <div class="tea-card-price"><span class="price" data-amount-ngn="${ing.price}"></span></div>
                         <div class="tea-card-stock" data-stock="${displayedStock}">Stock: ${displayedStock}</div>
                     </div>
                     <button class="add-ingredient-btn" data-ingredient-id="${ing.id}" data-ingredient-name="${ing.name}">Add to Cart</button>
@@ -510,6 +687,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             ingredientContainer.appendChild(card);
         });
+
+        // Convert any price placeholders after ingredients are rendered
+        if (window.updatePriceElements) window.updatePriceElements();
 
         // hook up add buttons
         ingredientContainer.querySelectorAll('.add-ingredient-btn').forEach(btn => {
@@ -596,7 +776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h4>${tea.name}</h4>
                     <p>${tea.description}</p>
                     <div class="tea-card-footer">
-                        <div class="tea-card-price">$${tea.price}</div>
+                        <div class="tea-card-price"><span class="price" data-amount-ngn="${tea.price}"></span></div>
                         <div class="tea-card-stock" data-stock="${displayedStock}">Stock: ${displayedStock}</div>
                     </div>
                     <button class="add-to-cart-btn" data-tea-id="${tea.id}" data-tea-name="${tea.name}">Add to Cart</button>
@@ -641,6 +821,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 event.target.textContent = 'Add to Cart';
             });
         });
+
+        // After rendering teas, update any price placeholders
+        if (window.updatePriceElements) window.updatePriceElements();
     }
 
     async function renderCartPage() {
@@ -679,6 +862,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             for (const cartItem of backendCart.items) {
                 const tea = cartItem.tea;
+                const ingredient = cartItem.ingredient;
                 if (tea) {
                     const itemTotal = tea.price * cartItem.quantity;
                     total += itemTotal;
@@ -688,52 +872,59 @@ document.addEventListener('DOMContentLoaded', async () => {
                     cartItemElement.innerHTML = `
                         <img src="${(tea.image ? (tea.image.startsWith('http') ? tea.image : BACKEND_BASE + tea.image) : 'https://via.placeholder.com/50')}" alt="${tea.name}">
                         <h4>${tea.name}</h4>
-                        <p>Price: $${tea.price}</p>
-                        <input type="number" class="item-quantity" data-tea-id="${tea.id}" data-cart-item-id="${cartItem.id}" value="${cartItem.quantity}" min="1">
-                        <button class="remove-item-btn" data-tea-id="${tea.id}" data-cart-item-id="${cartItem.id}">Remove</button>
-                        <p>Subtotal: $${itemTotal.toFixed(2)}</p>
+                        <p>Price: <span class="price" data-amount-ngn="${tea.price}"></span></p>
+                        <input type="number" class="item-quantity" data-cart-item-id="${cartItem.id}" value="${cartItem.quantity}" min="1">
+                        <button class="remove-item-btn" data-cart-item-id="${cartItem.id}">Remove</button>
+                        <p>Subtotal: <span class="price" data-amount-ngn="${itemTotal}"></span></p>
                     `;
                     cartItemsContainer.appendChild(cartItemElement);
                     
                     // Store tea data for reference
                     teaData[tea.id] = tea;
+                } else if (ingredient) {
+                    const itemTotal = ingredient.price * cartItem.quantity;
+                    total += itemTotal;
+
+                    const cartItemElement = document.createElement('div');
+                    cartItemElement.classList.add('cart-item');
+                    cartItemElement.innerHTML = `
+                        <img src="${(ingredient.image ? (ingredient.image.startsWith('http') ? ingredient.image : BACKEND_BASE + ingredient.image) : 'https://via.placeholder.com/50')}" alt="${ingredient.name}">
+                        <h4>${ingredient.name}</h4>
+                        <p>Price: <span class="price" data-amount-ngn="${ingredient.price}"></span></p>
+                        <input type="number" class="item-quantity" data-cart-item-id="${cartItem.id}" value="${cartItem.quantity}" min="1">
+                        <button class="remove-item-btn" data-cart-item-id="${cartItem.id}">Remove</button>
+                        <p>Subtotal: <span class="price" data-amount-ngn="${itemTotal}"></span></p>
+                    `;
+                    cartItemsContainer.appendChild(cartItemElement);
                 }
             }
 
-            cartTotalSpan.textContent = total.toFixed(2);
+            // cart total amount stored in data-attribute for later formatting
+            if (cartTotalSpan) {
+                cartTotalSpan.setAttribute('data-amount-ngn', total);
+                cartTotalSpan.classList.add('price');
+                cartTotalSpan.textContent = '';
+            }
 
-            // Setup quantity change handlers
+            // Setup quantity change handlers (use cart_item id)
             document.querySelectorAll('.item-quantity').forEach(input => {
                 input.addEventListener('change', async (event) => {
-                    const teaId = parseInt(event.target.getAttribute('data-tea-id'));
                     const cartItemId = parseInt(event.target.getAttribute('data-cart-item-id'));
                     const newQuantity = parseInt(event.target.value);
-                    
-                    // Find and update cart item locally
-                    const cartItem = cart.find(item => item.teaId === teaId);
-                    if (cartItem) {
-                        cartItem.cartItemId = cartItemId;
-                    }
-                    
-                    await updateQuantity(teaId, newQuantity);
+                    await updateCartItemById(cartItemId, newQuantity);
                 });
             });
 
             // Setup remove handlers
             document.querySelectorAll('.remove-item-btn').forEach(button => {
                 button.addEventListener('click', async (event) => {
-                    const teaId = parseInt(event.target.getAttribute('data-tea-id'));
                     const cartItemId = parseInt(event.target.getAttribute('data-cart-item-id'));
-                    
-                    // Find and update cart item locally
-                    const cartItem = cart.find(item => item.teaId === teaId);
-                    if (cartItem) {
-                        cartItem.cartItemId = cartItemId;
-                    }
-                    
-                    await removeItem(teaId);
+                    await removeCartItemById(cartItemId);
                 });
             });
+
+            // After rendering the cart, convert price placeholders (line items and total)
+            if (window.updatePriceElements) window.updatePriceElements();
 
         } catch (error) {
             console.error('Error rendering cart page:', error);
@@ -787,7 +978,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const checkoutItemElement = document.createElement('div');
                 checkoutItemElement.classList.add('checkout-item');
                 checkoutItemElement.innerHTML = `
-                    <p>${tea.name} x ${cartItem.quantity} - $${itemTotal.toFixed(2)}</p>
+                    <p>${tea.name} x ${cartItem.quantity} - <span class="price" data-amount-ngn="${itemTotal}"></span></p>
                 `;
                 checkoutCartItems.appendChild(checkoutItemElement);
 
@@ -796,8 +987,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        checkoutSubtotalSpan.textContent = subtotal.toFixed(2);
+        if (checkoutSubtotalSpan) {
+            checkoutSubtotalSpan.setAttribute('data-amount-ngn', subtotal);
+            checkoutSubtotalSpan.classList.add('price');
+            checkoutSubtotalSpan.textContent = '';
+        }
         updateFinalTotal(subtotal);
+        // Update any price placeholders (subtotal and line items)
+        if (window.updatePriceElements) window.updatePriceElements();
 
         // Populate pickup locations and user's saved delivery addresses
         try {
@@ -827,7 +1024,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                         pickupSelect._pickupMap = {};
                         pickups.forEach(p => pickupSelect._pickupMap[p.id] = p);
                         const p0 = pickups[0];
-                        deliveryFeeSpan.textContent = (p0.delivery_fee || 0).toFixed(2);
+                        // Coerce delivery_fee to a Number and set as data attribute so conversion routine can format
+                        const initialFee = Number(p0.delivery_fee) || 0;
+                        if (deliveryFeeSpan) {
+                            deliveryFeeSpan.setAttribute('data-amount-ngn', initialFee);
+                            deliveryFeeSpan.classList.add('price');
+                            deliveryFeeSpan.textContent = '';
+                        }
+                        if (finalOrderTotalSpan) {
+                            const currentSubtotal = Number(checkoutSubtotalSpan && checkoutSubtotalSpan.getAttribute('data-amount-ngn')) || 0;
+                            finalOrderTotalSpan.setAttribute('data-amount-ngn', (currentSubtotal + initialFee));
+                            finalOrderTotalSpan.classList.add('price');
+                            finalOrderTotalSpan.textContent = '';
+                        }
+                        if (window.updatePriceElements) window.updatePriceElements();
                     }
 
                     // Update delivery fee when user changes pickup location
@@ -835,11 +1045,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const sel = e.target.value;
                         const map = e.target._pickupMap || {};
                         const picked = map[sel];
-                        const fee = picked ? (picked.delivery_fee || 0) : 0;
-                        deliveryFeeSpan.textContent = Number(fee).toFixed(2);
-                        // Recompute final total (use current subtotal displayed)
-                        const subtotal = parseFloat(checkoutSubtotalSpan.textContent) || 0;
-                        finalOrderTotalSpan.textContent = (subtotal + Number(fee)).toFixed(2);
+                        const fee = picked ? Number(picked.delivery_fee) || 0 : 0;
+                        if (deliveryFeeSpan) {
+                            deliveryFeeSpan.setAttribute('data-amount-ngn', fee);
+                            deliveryFeeSpan.classList.add('price');
+                            deliveryFeeSpan.textContent = '';
+                        }
+                        const subtotal = Number(checkoutSubtotalSpan && checkoutSubtotalSpan.getAttribute('data-amount-ngn')) || 0;
+                        if (finalOrderTotalSpan) {
+                            finalOrderTotalSpan.setAttribute('data-amount-ngn', (subtotal + fee));
+                            finalOrderTotalSpan.classList.add('price');
+                            finalOrderTotalSpan.textContent = '';
+                        }
+                        if (window.updatePriceElements) window.updatePriceElements();
                     });
                 }
             }
@@ -870,11 +1088,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (selectedType === 'pickup') {
                         pickupLocationDiv.style.display = 'block';
                         deliveryAddressDiv.style.display = 'none';
-                        deliveryFeeSpan.textContent = '0.00';
+                        if (deliveryFeeSpan) {
+                            deliveryFeeSpan.setAttribute('data-amount-ngn', 0);
+                            deliveryFeeSpan.classList.add('price');
+                            deliveryFeeSpan.textContent = '';
+                        }
                     } else {
                         pickupLocationDiv.style.display = 'none';
                         deliveryAddressDiv.style.display = 'block';
-                        deliveryFeeSpan.textContent = DELIVERY_FEE.toFixed(2);
+                        if (deliveryFeeSpan) {
+                            deliveryFeeSpan.setAttribute('data-amount-ngn', Number(DELIVERY_FEE) || 0);
+                            deliveryFeeSpan.classList.add('price');
+                            deliveryFeeSpan.textContent = '';
+                        }
                     }
                     updateFinalTotal(subtotal);
                 }
@@ -960,8 +1186,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentDeliveryFee = DELIVERY_FEE;
             }
         });
-        deliveryFeeSpan.textContent = currentDeliveryFee.toFixed(2);
-        finalOrderTotalSpan.textContent = (subtotal + currentDeliveryFee).toFixed(2);
+        if (deliveryFeeSpan) {
+                deliveryFeeSpan.setAttribute('data-amount-ngn', Number(currentDeliveryFee) || 0);
+                deliveryFeeSpan.classList.add('price');
+                deliveryFeeSpan.textContent = '';
+        }
+        if (finalOrderTotalSpan) {
+                finalOrderTotalSpan.setAttribute('data-amount-ngn', (Number(subtotal) || 0) + (Number(currentDeliveryFee) || 0));
+                finalOrderTotalSpan.classList.add('price');
+                finalOrderTotalSpan.textContent = '';
+        }
+        if (window.updatePriceElements) window.updatePriceElements();
     }
 
 
@@ -1075,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             orders.forEach(order => {
                 const el = document.createElement('div');
                 el.className = 'order-card';
-                const date = new Date(order.created_at).toLocaleString();
+                const date = new Date(order.created_at).toLocaleString('en-NG');
                 const status = order.ordered ? 'Completed' : 'Pending';
                 const delivery = order.delivery_type || 'pickup';
                 const address = delivery === 'pickup' ? (order.pickup_location || '') : (order.delivery_address_line1 || '');
@@ -1084,7 +1319,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (order.items && order.items.length) {
                     order.items.forEach(it => {
                         const teaName = it.tea ? it.tea.name : (`Tea #${it.tea}`);
-                        itemsHtml += `<div class="order-item"><strong>${teaName}</strong> x ${it.quantity} — $${(it.tea ? it.tea.price : 0)}</div>`;
+                                const priceVal = it.tea ? it.tea.price : (it.ingredient ? it.ingredient.price : 0);
+                                itemsHtml += `<div class="order-item"><strong>${teaName}</strong> x ${it.quantity} — <span class="price" data-amount-ngn="${priceVal}"></span></div>`;
                     });
                 }
 
@@ -1097,14 +1333,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div>Address/Pickup: ${address}</div>
                     <div>Items:</div>
                     <div class="order-items">${itemsHtml}</div>
-                    <div style="margin-top:8px; font-weight:600">Total: $${parseFloat(order.total_price).toFixed(2)}</div>
+                            <div style="margin-top:8px; font-weight:600">Total: <span class="price" data-amount-ngn="${order.total_price}"></span></div>
                 `;
 
                 ordersContainer.appendChild(el);
             });
+                    // After adding the order card, convert any price placeholders
+                    if (window.updatePriceElements) window.updatePriceElements();
         } catch (err) {
             console.error('Could not load orders:', err);
             ordersContainer.innerHTML = '<p>Error loading orders. Try again later.</p>';
         }
+    }
+    // Safety net: ensure price placeholders are updated once after the page finishes initial rendering.
+    // This helps when some UI inserts happen slightly after DOMContentLoaded (async fetches).
+    try {
+        if (window.updatePriceElements) {
+            // run shortly after load to allow any remaining inserts to complete
+            setTimeout(() => {
+                try { window.updatePriceElements(); } catch (err) { console.error('Price update fallback failed:', err); }
+            }, 250);
+        }
+    } catch (err) {
+        console.error('Price fallback setup error:', err);
     }
 });

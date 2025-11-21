@@ -6,6 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const BACKEND_BASE = API_URL.replace(/\/api\/?$/, '');
     const container = document.getElementById('product-detail');
 
+    function formatCurrency(value) {
+        const num = Number(value) || 0;
+        try {
+            return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(num);
+        } catch (e) {
+            return `₦${num.toFixed(2)}`;
+        }
+    }
+
     function displayNotification(message, type = 'success') {
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
@@ -68,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="tea-card-content">
                     <h2>${tea.name}</h2>
-                    <p class="tea-card-price">Price: $${tea.price}</p>
+                    <p class="tea-card-price">Price: ${formatCurrency(tea.price)}</p>
                     <p class="tea-card-stock" data-stock="${tea.quantity_in_stock}">In stock: ${tea.quantity_in_stock}</p>
                     <p>${tea.description || ''}</p>
                     <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">

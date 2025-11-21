@@ -139,9 +139,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/stable/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en-ng'
 
-TIME_ZONE = 'UTC'
+# Set timezone to Nigeria
+TIME_ZONE = 'Africa/Lagos'
 
 USE_I18N = True
 
@@ -161,6 +162,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/stable/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Localization / Currency defaults for Nigeria
+DEFAULT_CURRENCY = 'NGN'
+CURRENCY_SYMBOL = '₦'
 
 # REST Framework configuration
 REST_FRAMEWORK = {
