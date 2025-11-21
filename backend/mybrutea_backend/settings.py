@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-pleasereplacethiswitharealsecretkey'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["mybru.onrender.com","127.0.0.1","localhost"]
+ALLOWED_HOSTS = ["mybru.onrender.com","127.0.0.1","localhost", "tjib26.pythonanywhere.com"]
 
 
 # Application definition
