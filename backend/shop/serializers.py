@@ -1,8 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Tea, Ingredient, Cart, CartItem, Order, OrderItem, Membership, Subscription, Profile, PickupLocation, DeliveryAddress
-from .models import IngredientCategory
+from .models import Tea, Ingredient, Cart, CartItem, Order, OrderItem, Membership, Subscription, Profile, PickupLocation, DeliveryAddress, Payment, IngredientCategory
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -64,40 +63,8 @@ class OrderSerializer(serializers.ModelSerializer):
 class MembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = Membership
-        fields = '__all__'
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    membership = MembershipSerializer(read_only=True)
-
-    class Meta:
-        model = Subscription
-        fields = '__all__'
-
-class ProfileSerializer(serializers.ModelSerializer):
-    membership = MembershipSerializer(read_only=True)
-
-    class Meta:
-        model = Profile
-        fields = '__all__'
-
-
-class PickupLocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PickupLocation
-        fields = '__all__'
-
-
-class IngredientCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IngredientCategory
-        fields = ['id', 'name', 'description']
-
-
-class DeliveryAddressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DeliveryAddress
-        fields = ['id', 'user', 'address_line1', 'address_line2', 'city', 'state', 'zip_code', 'is_default', 'created_at']
-        read_only_fields = ['id', 'user', 'created_at']
+        fields = ['id', 'tier', 'name', 'description', 'price', 'features', 'max_customizations_per_month', 'includes_health_protocol', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 
 # Authentication Serializers
@@ -130,3 +97,60 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['id', 'subscription', 'amount', 'status', 'payment_method', 'transaction_ref', 'created_at', 'completed_at']
+        read_only_fields = ['id', 'created_at', 'completed_at']
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    membership = MembershipSerializer(read_only=True)
+    membership_id = serializers.IntegerField(write_only=True, required=False)
+    payments = PaymentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'user', 'membership', 'membership_id', 'status', 'start_date', 'end_date', 'renewal_date', 'auto_renew', 'customizations_used_this_month', 'payments']
+        read_only_fields = ['id', 'user', 'start_date', 'renewal_date']
+
+    def create(self, validated_data):
+        membership_id = validated_data.pop('membership_id', None)
+        user = self.context['request'].user
+        
+        if membership_id:
+            membership = Membership.objects.get(id=membership_id)
+            validated_data['membership'] = membership
+        
+        return Subscription.objects.create(user=user, **validated_data)
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    current_membership = MembershipSerializer(read_only=True)
+    user_details = CustomUserSerializer(source='user', read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ['id', 'user', 'user_details', 'current_membership', 'bio', 'tea_preferences', 'health_goals', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+
+class PickupLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PickupLocation
+        fields = '__all__'
+
+
+class IngredientCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IngredientCategory
+        fields = ['id', 'name', 'description']
+
+
+class DeliveryAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryAddress
+        fields = ['id', 'user', 'address_line1', 'address_line2', 'city', 'state', 'zip_code', 'is_default', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']

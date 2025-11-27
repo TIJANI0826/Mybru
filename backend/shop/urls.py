@@ -11,6 +11,9 @@ router.register(r'ingredient-categories', views.IngredientCategoryViewSet)
 router.register(r'carts', views.CartViewSet)
 router.register(r'orders', views.OrderViewSet)
 router.register(r'memberships', views.MembershipViewSet)
+router.register(r'subscriptions', views.SubscriptionViewSet, basename='subscription')
+router.register(r'payments', views.PaymentViewSet, basename='payment')
+router.register(r'profiles', views.ProfileViewSet, basename='profile')
 router.register(r'pickup-locations', views.PickupLocationViewSet)
 
 urlpatterns = [
