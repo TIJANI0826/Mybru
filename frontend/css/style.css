@@ -971,8 +971,8 @@ button[type="submit"]:hover {
 
 .tea-card-footer {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 6px;
     font-size: 0.9rem;
 }
 
@@ -1254,8 +1254,7 @@ button[type="submit"]:hover {
     }
 
     .tea-card-footer {
-        font-size: 0.8rem;
-        gap: 5px;
+        gap: 4px;
     }
 
     .tea-card-price {
