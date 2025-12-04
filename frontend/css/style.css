@@ -815,6 +815,20 @@ button[type="submit"]:hover {
     font-size: 1.8rem;
 }
 
+#ingredient-catalog-section {
+    margin: 40px 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+#ingredient-catalog-section h3 {
+    text-align: center;
+    color: #41505A;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+}
+
 .tea-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -960,6 +974,64 @@ button[type="submit"]:hover {
     .modal-content {
         width: 90%;
         margin: 15% auto;
+    }
+
+    /* Mobile adjustments for tea gallery */
+    #tea-gallery-section h3 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
+    .tea-grid {
+        gap: 12px;
+        padding: 0;
+    }
+
+    .tea-card {
+        border-radius: 6px;
+    }
+
+    .tea-card-image {
+        height: 120px;
+    }
+
+    .tea-card-content {
+        padding: 12px;
+    }
+
+    .tea-card-content h4 {
+        font-size: 0.95rem;
+        margin: 0 0 6px 0;
+    }
+
+    .tea-card-content p {
+        font-size: 0.75rem;
+        line-height: 1.3;
+        margin: 0 0 8px 0;
+    }
+
+    .tea-card-footer {
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+    }
+
+    .tea-card-price {
+        font-size: 0.95rem;
+    }
+
+    .tea-card-stock {
+        font-size: 0.75rem;
+    }
+
+    .tea-card .add-to-cart-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    /* Mobile adjustments for ingredient catalog */
+    #ingredient-catalog-section h3 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
     }
 }
 
