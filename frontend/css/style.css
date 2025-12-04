@@ -132,7 +132,7 @@ nav ul li a {
 }
 
 #tea-gallery-container, .tea-grid {
-    display: block;
+    display: grid;
     gap: 14px;
 }
 
@@ -515,10 +515,9 @@ footer {
 }
 
 #tea-gallery-container {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    justify-content: center;
 }
 
 .tea-item {
