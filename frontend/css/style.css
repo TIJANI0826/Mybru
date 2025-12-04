@@ -832,7 +832,7 @@ button[type="submit"]:hover {
 .tea-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
+    gap: 20px;
     padding: 0;
 }
 
@@ -841,9 +841,10 @@ button[type="submit"]:hover {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, cursor 0.2s ease;
     display: flex;
     flex-direction: column;
+    cursor: pointer;
 }
 
 .tea-card:hover {
@@ -853,7 +854,7 @@ button[type="submit"]:hover {
 
 .tea-card-image {
     width: 100%;
-    height: 200px;
+    height: 180px;
     overflow: hidden;
     background-color: #f0f0f0;
 }
@@ -870,58 +871,180 @@ button[type="submit"]:hover {
 }
 
 .tea-card-content {
-    padding: 20px;
+    padding: 15px;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+    justify-content: space-between;
 }
 
 .tea-card-content h4 {
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     color: #41505A;
-    font-size: 1.2rem;
-}
-
-.tea-card-content p {
-    margin: 0 0 15px 0;
-    color: #666;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    flex-grow: 1;
+    font-size: 1.1rem;
+    line-height: 1.3;
 }
 
 .tea-card-footer {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 15px;
+    align-items: center;
     font-size: 0.9rem;
 }
 
 .tea-card-price {
     color: #41505A;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .tea-card-stock {
     color: #999;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+}product-modal.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.tea-card .add-to-cart-btn {
+.modal-content {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: #41505A;
+}
+
+.modal-image {
+    width: 100%;
+    height: 300px;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.modal-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.modal-title {
+    font-size: 2rem;
+    color: #41505A;
+    margin: 0 0 15px 0;
+}
+
+.modal-description {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+}
+
+.modal-price {
+    font-size: 1.5rem;
+    color: #41505A;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+}
+
+.modal-stock {
+    color: #666;
+    margin: 0 0 25px 0;
+}
+
+.modal-stock.in-stock {
+    color: #4caf50;
+}
+
+.modal-stock.out-of-stock {
+    color: #f44336;
+}
+
+.quantity-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.quantity-selector label {
+    font-weight: 600;
+    color: #41505A;
+}
+
+.quantity-selector input {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.quantity-selector input:focus {
+    outline: none;
+    border-color: #41505A;
+    box-shadow: 0 0 5px rgba(65, 80, 90, 0.2);
+}
+
+.modal-add-to-cart-btn {
     background-color: #41505A;
     color: #EAEAEA;
-    padding: 10px 16px;
+    padding: 12px 30px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 1rem;
     transition: background-color 0.3s ease;
     width: 100%;
 }
 
-.tea-card .add-to-cart-btn:hover {
+.modal-add-to-cart-btn:hover {
     background-color: #36454F;
+}
+
+.modal-add-to-cart-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 /* --- Media Queries for Responsiveness --- */
@@ -982,7 +1105,13 @@ button[type="submit"]:hover {
         margin-bottom: 15px;
     }
 
+    #ingredient-catalog-section h3 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
     .tea-grid {
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
         padding: 0;
     }
@@ -992,27 +1121,22 @@ button[type="submit"]:hover {
     }
 
     .tea-card-image {
-        height: 120px;
+        height: 140px;
     }
 
     .tea-card-content {
-        padding: 12px;
+        padding: 10px;
     }
 
     .tea-card-content h4 {
-        font-size: 0.95rem;
-        margin: 0 0 6px 0;
-    }
-
-    .tea-card-content p {
-        font-size: 0.75rem;
-        line-height: 1.3;
-        margin: 0 0 8px 0;
+        font-size: 0.9rem;
+        margin: 0 0 5px 0;
+        line-height: 1.2;
     }
 
     .tea-card-footer {
         font-size: 0.8rem;
-        margin-bottom: 8px;
+        gap: 5px;
     }
 
     .tea-card-price {
@@ -1020,18 +1144,35 @@ button[type="submit"]:hover {
     }
 
     .tea-card-stock {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 
-    .tea-card .add-to-cart-btn {
-        padding: 8px 12px;
-        font-size: 0.85rem;
+    /* Modal adjustments for mobile */
+    .product-modal .modal-content {
+        width: 90%;
+        padding: 20px;
+        margin: 0;
+        border-radius: 8px;
     }
 
-    /* Mobile adjustments for ingredient catalog */
-    #ingredient-catalog-section h3 {
-        font-size: 1.3rem;
+    .modal-image {
+        height: 200px;
         margin-bottom: 15px;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+    }
+
+    .modal-description {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+
+    .modal-price {
+        font-size: 1.3rem;
+        margin-bottom: 12px;
     }
 }
 

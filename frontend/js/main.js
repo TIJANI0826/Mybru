@@ -92,6 +92,120 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // ============ PRODUCT MODAL SYSTEM ============
+    function createAndShowProductModal(product, isIngredient = false) {
+        // Remove existing modal if any
+        const existingModal = document.getElementById('product-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'product-modal';
+        modal.className = 'product-modal active';
+
+        // Handle both teas and ingredients
+        const stock = isIngredient ? product.stock : product.quantity_in_stock;
+        const stockStatus = stock > 0 ? 'in-stock' : 'out-of-stock';
+        const stockText = stock > 0 ? `${stock} in stock` : 'Out of stock';
+
+        const imageUrl = product.image ? (product.image.startsWith('http') ? product.image : BACKEND_BASE + product.image) : 'https://via.placeholder.com/400x400';
+
+        const dataAttrType = isIngredient ? 'data-ingredient-id' : 'data-tea-id';
+        const dataAttrId = isIngredient ? product.id : product.id;
+
+        modal.innerHTML = `
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <div class="modal-image">
+                    <img src="${imageUrl}" alt="${product.name}">
+                </div>
+                <h2 class="modal-title">${product.name}</h2>
+                <p class="modal-description">${product.description}</p>
+                <div class="modal-price"><span class="price" data-amount-ngn="${product.price}"></span></div>
+                <div class="modal-stock ${stockStatus}">${stockText}</div>
+                ${stock > 0 ? `
+                    <div class="quantity-selector">
+                        <label for="quantity-input">Quantity:</label>
+                        <input type="number" id="quantity-input" min="1" max="${stock}" value="1">
+                    </div>
+                    <button class="modal-add-to-cart-btn" ${dataAttrType}="${dataAttrId}" data-product-name="${product.name}" data-is-ingredient="${isIngredient ? 'true' : 'false'}">Add to Cart</button>
+                ` : `
+                    <button class="modal-add-to-cart-btn" disabled>Out of Stock</button>
+                `}
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Update price in modal
+        if (window.updatePriceElements) window.updatePriceElements();
+
+        // Close button handler
+        const closeBtn = modal.querySelector('.modal-close');
+        closeBtn.addEventListener('click', () => {
+            modal.remove();
+        });
+
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // Add to cart button handler
+        const addToCartBtn = modal.querySelector('.modal-add-to-cart-btn');
+        if (addToCartBtn && !addToCartBtn.disabled) {
+            addToCartBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const quantityInput = modal.querySelector('#quantity-input');
+                const quantity = parseInt(quantityInput.value) || 1;
+                const isIng = addToCartBtn.getAttribute('data-is-ingredient') === 'true';
+                const productName = addToCartBtn.getAttribute('data-product-name');
+
+                let productId;
+                if (isIng) {
+                    productId = parseInt(addToCartBtn.getAttribute('data-ingredient-id'));
+                } else {
+                    productId = parseInt(addToCartBtn.getAttribute('data-tea-id'));
+                }
+
+                addToCartBtn.disabled = true;
+                addToCartBtn.textContent = 'Adding...';
+
+                if (isIng) {
+                    await addIngredientToCartWithNotification(productId, productName, quantity);
+                } else {
+                    await addToCartWithNotification(productId, productName, quantity);
+                }
+
+                addToCartBtn.disabled = false;
+                addToCartBtn.textContent = 'Add to Cart';
+
+                // Close modal after adding
+                setTimeout(() => {
+                    modal.remove();
+                }, 500);
+            });
+        }
+
+        // Keyboard accessibility: Escape to close
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', handleKeyDown);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+    }
+
+    function openProductModal(product) {
+        // Check if it's an ingredient (has 'stock' property instead of 'quantity_in_stock')
+        const isIngredient = product.hasOwnProperty('stock') && !product.hasOwnProperty('quantity_in_stock');
+        createAndShowProductModal(product, isIngredient);
+    }
+
     const userMenu = document.getElementById('user-menu');
     const authLinks = document.getElementById('auth-links');
     const userNameSpan = document.getElementById('user-name');
@@ -709,34 +823,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="tea-card-content">
                     <h4>${ing.name}</h4>
-                    <p>${ing.description}</p>
                     <div class="tea-card-footer">
                         <div class="tea-card-price"><span class="price" data-amount-ngn="${ing.price}"></span></div>
                         <div class="tea-card-stock" data-stock="${displayedStock}">Stock: ${displayedStock}</div>
                     </div>
-                    <button class="add-ingredient-btn" data-ingredient-id="${ing.id}" data-ingredient-name="${ing.name}">Add to Cart</button>
                 </div>
             `;
 
             ingredientContainer.appendChild(card);
+
+            // Open product modal when the card is clicked
+            card.addEventListener('click', (e) => {
+                openProductModal(ing);
+            });
+
+            // Keyboard accessibility: Enter or Space opens modal
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openProductModal(ing);
+                }
+            });
         });
 
         // Convert any price placeholders after ingredients are rendered
         if (window.updatePriceElements) window.updatePriceElements();
-
-        // hook up add buttons
-        ingredientContainer.querySelectorAll('.add-ingredient-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const id = parseInt(e.target.getAttribute('data-ingredient-id'));
-                const name = e.target.getAttribute('data-ingredient-name');
-                e.target.disabled = true;
-                e.target.textContent = 'Adding...';
-                await addIngredientToCartWithNotification(id, name, 1);
-                e.target.disabled = false;
-                e.target.textContent = 'Add to Cart';
-            });
-        });
     }
 
     async function addIngredientToCartWithNotification(ingredientId, ingredientName, quantity = 1) {
@@ -807,12 +918,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="tea-card-content">
                     <h4>${tea.name}</h4>
-                    <p>${tea.description}</p>
                     <div class="tea-card-footer">
                         <div class="tea-card-price"><span class="price" data-amount-ngn="${tea.price}"></span></div>
                         <div class="tea-card-stock" data-stock="${displayedStock}">Stock: ${displayedStock}</div>
                     </div>
-                    <button class="add-to-cart-btn" data-tea-id="${tea.id}" data-tea-name="${tea.name}">Add to Cart</button>
                 </div>
             `;
 
@@ -821,37 +930,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Store tea data globally for later reference
             teaData[tea.id] = tea;
 
-            // Open product detail when the card (but not its inner button) is clicked
+            // Open product modal when the card is clicked
             teaCard.addEventListener('click', (e) => {
-                if (e.target.closest('.add-to-cart-btn')) return; // let button handle it
-                window.location.href = `product.html?id=${tea.id}`;
+                openProductModal(tea);
             });
 
-            // Keyboard accessibility: Enter or Space opens detail
+            // Keyboard accessibility: Enter or Space opens modal
             teaCard.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    teaCard.click();
+                    openProductModal(tea);
                 }
-            });
-        });
-
-        // Hook add-to-cart buttons (delegated within gallery) -- still works after cards
-        teaGalleryContainer.querySelectorAll('.add-to-cart-btn').forEach(button => {
-            button.addEventListener('click', async (event) => {
-                event.preventDefault();
-                const teaId = parseInt(event.target.getAttribute('data-tea-id'));
-                const teaName = event.target.getAttribute('data-tea-name');
-
-                // Disable button during operation
-                event.target.disabled = true;
-                event.target.textContent = 'Adding...';
-
-                await addToCartWithNotification(teaId, teaName, 1);
-
-                // Re-enable button
-                event.target.disabled = false;
-                event.target.textContent = 'Add to Cart';
             });
         });
 
