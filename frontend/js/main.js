@@ -211,22 +211,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userNameSpan = document.getElementById('user-name');
     const logoutBtn = document.getElementById('logout-btn');
 
+    // Navbar auth elements (for mobile)
+    const navUserMenu = document.getElementById('nav-user-menu');
+    const navAuthLinks = document.getElementById('nav-auth-links');
+    const navUserName = document.getElementById('nav-user-name');
+    const navLogoutBtn = document.getElementById('nav-logout-btn');
+
     function checkAuthStatus() {
         const user = JSON.parse(localStorage.getItem('user'));
         const token = localStorage.getItem('token');
 
         if (user && token) {
             // User is logged in
+            // Hide auth links and show user menu (header)
             authLinks.style.display = 'none';
             userMenu.style.display = 'flex';
             userNameSpan.textContent = user.username || user.email;
+
+            // Hide auth links and show user menu (navbar)
+            if (navAuthLinks) navAuthLinks.style.display = 'none';
+            if (navUserMenu) navUserMenu.style.display = 'flex';
+            if (navUserName) navUserName.textContent = user.username || user.email;
             
             // Check if user is a paying member and hide membership nav if they are
             checkMembershipStatus(user, token);
         } else {
             // User is not logged in
+            // Show auth links and hide user menu (header)
             authLinks.style.display = 'flex';
             userMenu.style.display = 'none';
+
+            // Show auth links and hide user menu (navbar)
+            if (navAuthLinks) navAuthLinks.style.display = 'flex';
+            if (navUserMenu) navUserMenu.style.display = 'none';
         }
     }
 
@@ -297,6 +314,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
+    }
+
+    if (navLogoutBtn) {
+        navLogoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
     }
 
     // Check auth status on page load

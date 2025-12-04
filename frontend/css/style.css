@@ -311,6 +311,85 @@ header p {
     background-color: #6B3410;
 }
 
+/* Navbar Auth Buttons (for mobile integration) */
+.nav-auth-separator {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #555;
+}
+
+.nav-user-menu {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 14px;
+    background-color: rgba(139, 69, 19, 0.1);
+    border: 1px solid #8B4513;
+    border-radius: 5px;
+}
+
+.nav-user-name {
+    color: #FFD700;
+    font-weight: bold;
+    font-size: 0.95rem;
+    display: block;
+}
+
+.nav-logout-btn {
+    background-color: #8B4513;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s;
+}
+
+.nav-logout-btn:hover {
+    background-color: #6B3410;
+}
+
+.nav-auth-links {
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 14px;
+}
+
+.nav-btn-login, .nav-btn-signup {
+    padding: 8px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s;
+    font-size: 0.95rem;
+    display: block;
+    text-align: center;
+}
+
+.nav-btn-login {
+    color: #EAEAEA;
+    border: 1px solid #8B4513;
+    background-color: transparent;
+}
+
+.nav-btn-login:hover {
+    background-color: #8B4513;
+}
+
+.nav-btn-signup {
+    background-color: #8B4513;
+    color: white;
+}
+
+.nav-btn-signup:hover {
+    background-color: #6B3410;
+}
+
 .cart-container {
     position: relative;
     display: inline-block;
@@ -1097,6 +1176,25 @@ button[type="submit"]:hover {
         text-align: center;
     }
 
+    /* Mobile navbar auth buttons */
+    .nav-auth-separator {
+        display: block !important;
+    }
+
+    .nav-user-menu {
+        display: none !important;
+        width: 100%;
+    }
+
+    .nav-user-menu.active {
+        display: flex !important;
+    }
+
+    .nav-auth-links {
+        display: flex !important;
+        width: 100%;
+    }
+
     /* Stack footer columns */
     .footer-content {
         flex-direction: column;
@@ -1253,6 +1351,19 @@ button[type="submit"]:hover {
         width: auto;
         padding: 10px 20px;
         text-align: center;
+    }
+
+    /* Hide navbar auth buttons on desktop (show header buttons instead) */
+    .nav-auth-separator {
+        display: none !important;
+    }
+
+    .nav-user-menu {
+        display: none !important;
+    }
+
+    .nav-auth-links {
+        display: none !important;
     }
 
     .footer-content {
