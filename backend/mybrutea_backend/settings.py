@@ -57,6 +57,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://tjib26.pythonanywhere.com",
     "https://mybru.onrender.com",
+    "https://mybru-1.onrender.com"
 ]
 CORS_ALLOW_HEADERS = [
     "accept",
