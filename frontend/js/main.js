@@ -206,27 +206,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         createAndShowProductModal(product, isIngredient);
     }
 
+    // Header auth elements (present on all pages)
     const userMenu = document.getElementById('user-menu');
     const authLinks = document.getElementById('auth-links');
     const userNameSpan = document.getElementById('user-name');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // Navbar auth elements (for mobile)
-    const navUserMenu = document.getElementById('nav-user-menu');
-    const navAuthLinks = document.getElementById('nav-auth-links');
-    const navUserName = document.getElementById('nav-user-name');
-    const navLogoutBtn = document.getElementById('nav-logout-btn');
-
     function checkAuthStatus() {
         const user = JSON.parse(localStorage.getItem('user'));
         const token = localStorage.getItem('token');
 
+        // Navbar auth elements (fetched after nav injection is complete)
+        const navUserMenu = document.getElementById('nav-user-menu');
+        const navAuthLinks = document.getElementById('nav-auth-links');
+        const navUserName = document.getElementById('nav-user-name');
+        const navLogoutBtn = document.getElementById('nav-logout-btn');
+
         if (user && token) {
             // User is logged in
             // Hide auth links and show user menu (header)
-            authLinks.style.display = 'none';
-            userMenu.style.display = 'flex';
-            userNameSpan.textContent = user.username || user.email;
+            if (authLinks) authLinks.style.display = 'none';
+            if (userMenu) userMenu.style.display = 'flex';
+            if (userNameSpan) userNameSpan.textContent = user.username || user.email;
 
             // Hide auth links and show user menu (navbar)
             if (navAuthLinks) navAuthLinks.style.display = 'none';
@@ -238,12 +239,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             // User is not logged in
             // Show auth links and hide user menu (header)
-            authLinks.style.display = 'flex';
-            userMenu.style.display = 'none';
+            if (authLinks) authLinks.style.display = 'flex';
+            if (userMenu) userMenu.style.display = 'none';
 
             // Show auth links and hide user menu (navbar)
             if (navAuthLinks) navAuthLinks.style.display = 'flex';
             if (navUserMenu) navUserMenu.style.display = 'none';
+        }
+
+        // Setup/update logout button listener (navbar)
+        if (navLogoutBtn && !navLogoutBtn.hasListener) {
+            navLogoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+            navLogoutBtn.hasListener = true;
         }
     }
 
@@ -316,14 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutBtn.addEventListener('click', logout);
     }
 
-    if (navLogoutBtn) {
-        navLogoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            logout();
-        });
-    }
-
-    // Check auth status on page load
+    // Check auth status on page load (after nav injection is complete)
     checkAuthStatus();
 
     // Mobile nav toggle: find the toggle and wire up open/close behavior
