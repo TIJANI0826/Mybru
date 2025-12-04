@@ -240,7 +240,7 @@ header p {
 
 /* Authentication Section */
 .auth-section {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 10px;
 }
@@ -1351,6 +1351,11 @@ button[type="submit"]:hover {
         width: auto;
         padding: 10px 20px;
         text-align: center;
+    }
+
+    /* Show auth-section on desktop */
+    .auth-section {
+        display: flex !important;
     }
 
     /* Hide navbar auth buttons on desktop (show header buttons instead) */
