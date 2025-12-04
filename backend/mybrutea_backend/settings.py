@@ -49,7 +49,15 @@ INSTALLED_APPS = [
 
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://tjib26.pythonanywhere.com",
+    "https://mybru.onrender.com",
+]
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
@@ -69,6 +77,7 @@ CORS_ALLOW_METHODS = [
     "POST",
     "PUT",
 ]
+CORS_ALLOW_CREDENTIALS = True
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

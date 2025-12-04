@@ -817,7 +817,7 @@ button[type="submit"]:hover {
 
 .tea-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 25px;
     padding: 0;
 }
@@ -1036,7 +1036,7 @@ button[type="submit"]:hover {
     /* Tea gallery grid for larger screens */
     .tea-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 25px;
     }
 

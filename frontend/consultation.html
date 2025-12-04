@@ -15,7 +15,7 @@
             <ul class="nav-menu">
                 <li><a href="home.html">Home</a></li>
                 <li><a href="generic.html">Generic Brews</a></li>
-                <li><a href="exclusive.html" >Membership</a></li>
+                <li id="nav-membership"><a href="membership.html" >Membership</a></li>
                 <li><a href="about.html">About Us</a></li>
                 <li><a href="orders.html">Orders</a></li>
             </ul>
@@ -53,7 +53,9 @@
         <main>
             <section id="registration">
                 <h2>JOIN THE CARNIVAL!</h2>
-                <form action="/register" method="post" enctype="multipart/form-data">
+                <form id="consult-form" action="/register" method="post" enctype="multipart/form-data">
+                    <input type="hidden" id="membership-id" name="membership_id" value="">
+                    <input type="hidden" id="membership-tier" name="membership_tier" value="">
                     <div>
                         <label for="photo-upload">Upload Photo:</label>
                         <input type="file" id="photo-upload" name="photo">
@@ -146,6 +148,19 @@
 
                     <button type="submit">SUBMIT</button>
                 </form>
+                
+                <!-- Selection overlay (film) shown when user comes from membership page -->
+                <div id="membership-film" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+                    <div style="background:white; padding:20px; border-radius:8px; max-width:520px; width:90%; text-align:center;">
+                        <h3 id="film-title">Selected Membership</h3>
+                        <p id="film-desc">You selected <strong id="film-membership"></strong>.</p>
+                        <p style="margin-top:12px;">Fill the registration below to proceed with subscribing.</p>
+                        <div style="margin-top:18px; display:flex; gap:10px; justify-content:center;">
+                            <button id="film-continue" style="padding:8px 14px; background:#8B4513; color:white; border:none; border-radius:6px;">Continue</button>
+                            <button id="film-cancel" style="padding:8px 14px; background:#ccc; border:none; border-radius:6px;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section id="consultation-info">
@@ -174,5 +189,109 @@
         </div>
     </footer>
     <script src="js/main.js"></script>
+    <script>
+        // Consultation page: prefill membership and submit to API (update profile + create subscription)
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const membershipId = params.get('membership_id');
+            const tier = params.get('tier');
+
+            // Try localStorage fallback
+            let pending = null;
+            try { pending = JSON.parse(localStorage.getItem('pending_membership') || 'null'); } catch (e) { pending = null; }
+            const selId = membershipId || (pending && pending.id);
+            const selTier = tier || (pending && pending.tier);
+
+            if (selId) {
+                // Show film overlay
+                const film = document.getElementById('membership-film');
+                const filmMembership = document.getElementById('film-membership');
+                const filmTitle = document.getElementById('film-title');
+                filmMembership.textContent = selTier || ('#' + selId);
+                filmTitle.textContent = 'Selected Membership';
+                film.style.display = 'flex';
+
+                // Set hidden inputs
+                document.getElementById('membership-id').value = selId;
+                document.getElementById('membership-tier').value = selTier || '';
+
+                document.getElementById('film-continue').addEventListener('click', () => {
+                    film.style.display = 'none';
+                });
+                document.getElementById('film-cancel').addEventListener('click', () => {
+                    // clear selection and hide
+                    try { localStorage.removeItem('pending_membership'); } catch (e) {}
+                    film.style.display = 'none';
+                });
+            }
+
+            const form = document.getElementById('consult-form');
+            form.addEventListener('submit', async (ev) => {
+                ev.preventDefault();
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Please log in before subscribing.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const formData = new FormData(form);
+                // Map form fields to profile fields
+                const bio = (formData.get('other_names') || '') + ' ' + (formData.get('first_name') || '');
+                const teaPrefs = [];
+                // collect checkbox interests as tea_preferences
+                form.querySelectorAll('input[name="interest"]:checked').forEach(cb => teaPrefs.push(cb.value));
+                const health_goals = formData.get('health_targets') || formData.get('health_targets') || '';
+
+                try {
+                    // 1) get or create profile
+                    const profileResp = await fetch('https://tjib26.pythonanywhere.com/api/profiles/my_profile/', { headers: { 'Authorization': `Token ${token}` } });
+                    if (!profileResp.ok) throw new Error('Could not fetch profile');
+                    const profile = await profileResp.json();
+
+                    // 2) patch profile with collected data
+                    const patchResp = await fetch(`https://tjib26.pythonanywhere.com/api/profiles/${profile.id}/`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+                        body: JSON.stringify({ bio: bio.trim(), tea_preferences: teaPrefs, health_goals })
+                    });
+
+                    if (!patchResp.ok) {
+                        console.warn('Profile patch failed', await patchResp.text());
+                    }
+
+                    // 3) create subscription
+                    const membership_id = document.getElementById('membership-id').value;
+                    if (!membership_id) {
+                        alert('No membership selected. Please choose a membership first.');
+                        return;
+                    }
+
+                    const subResp = await fetch('https://tjib26.pythonanywhere.com/api/subscriptions/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+                        body: JSON.stringify({ membership_id: membership_id })
+                    });
+
+                    if (!subResp.ok) {
+                        const err = await subResp.json().catch(() => ({}));
+                        alert('Could not create subscription: ' + (err.error || subResp.statusText));
+                        return;
+                    }
+
+                    const subscription = await subResp.json();
+                    // Save membership locally for quick UI update
+                    try { localStorage.setItem('user-membership', JSON.stringify(subscription.membership || {})); } catch (e) {}
+                    alert('Subscription created successfully. Thank you!');
+                    // clear pending selection
+                    try { localStorage.removeItem('pending_membership'); } catch (e) {}
+                    window.location.href = 'membership.html';
+                } catch (err) {
+                    console.error('Subscription flow error', err);
+                    alert('An error occurred while creating your subscription. Please try again.');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -412,9 +412,41 @@
                         <p class="membership-description">${membership.description}</p>
                         
                         <ul class="membership-features">
-                            ${membership.features.map(f => `<li>${f}</li>`).join('')}
-                            ${membership.includes_health_protocol ? '<li>Personalized Health Protocols</li>' : ''}
-                            ${membership.max_customizations_per_month > 0 ? `<li>${membership.max_customizations_per_month} Customizations/Month</li>` : '<li>Unlimited Customizations</li>'}
+                            ${(() => {
+                                // Ensure features is an array before mapping
+                                let featuresArr = [];
+                                try {
+                                    if (Array.isArray(membership.features)) {
+                                        featuresArr = membership.features;
+                                    } else if (typeof membership.features === 'string') {
+                                        // Try parse JSON string, otherwise split by commas/newlines
+                                        try {
+                                            const parsed = JSON.parse(membership.features);
+                                            if (Array.isArray(parsed)) featuresArr = parsed;
+                                            else if (typeof parsed === 'object' && parsed !== null) featuresArr = Object.values(parsed);
+                                            else featuresArr = [String(parsed)];
+                                        } catch (e) {
+                                            featuresArr = membership.features.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+                                        }
+                                    } else if (membership.features && typeof membership.features === 'object') {
+                                        featuresArr = Object.values(membership.features);
+                                    }
+                                } catch (err) {
+                                    featuresArr = [];
+                                }
+
+                                const items = featuresArr.map(f => `<li>${f}</li>`).join('');
+                                const health = membership.includes_health_protocol ? '<li>Personalized Health Protocols</li>' : '';
+                                // If price is zero => no customizations available
+                                const priceNum = Number(membership.price) || 0;
+                                let customizations = '';
+                                if (priceNum === 0) {
+                                    customizations = '<li>No Customizations</li>';
+                                } else {
+                                    customizations = membership.max_customizations_per_month > 0 ? `<li>${membership.max_customizations_per_month} Customizations/Month</li>` : '<li>Unlimited Customizations</li>';
+                                }
+                                return items + health + customizations;
+                            })()}
                         </ul>
 
                         <div class="membership-cta">
@@ -429,25 +461,37 @@
                 `;
             }).join('');
 
-            // Update price elements after rendering
-            if (window.updatePriceElements) window.updatePriceElements();
+            // Update price elements after rendering (use global updater if present,
+            // otherwise fallback to local NGN formatter)
+            ensurePricesDisplayed();
+        }
+
+        function ensurePricesDisplayed() {
+            if (window.updatePriceElements) {
+                try { window.updatePriceElements(); return; } catch (e) { /* fallthrough */ }
+            }
+
+            function formatNgn(amount) {
+                const n = Number(amount);
+                if (isNaN(n)) return String(amount);
+                return n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            document.querySelectorAll('.price[data-amount-ngn]').forEach(el => {
+                const v = el.getAttribute('data-amount-ngn');
+                if (!el.textContent || el.textContent.trim() === '') {
+                    el.textContent = formatNgn(v);
+                }
+            });
         }
 
         function subscribeMembership(membershipId, tier) {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert('Please log in to subscribe to a membership plan.');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            // Check if user is already a casual member (non-registered)
-            // For casual members, we need to prompt them to confirm the upgrade
-
-            const confirmMessage = `Upgrade to ${tier} membership for ₦[price]/month?`;
-            if (confirm(confirmMessage)) {
-                createSubscription(membershipId);
-            }
+            // Store selected membership and navigate to the consultation/subscription form
+            const sel = { id: membershipId, tier };
+            try { localStorage.setItem('pending_membership', JSON.stringify(sel)); } catch (e) {}
+            // Pass via query param as well for convenience
+            const q = `?membership_id=${encodeURIComponent(membershipId)}&tier=${encodeURIComponent(tier)}`;
+            window.location.href = `consultation.html${q}`;
         }
 
         async function createSubscription(membershipId) {

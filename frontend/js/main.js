@@ -106,10 +106,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             authLinks.style.display = 'none';
             userMenu.style.display = 'flex';
             userNameSpan.textContent = user.username || user.email;
+            
+            // Check if user is a paying member and hide membership nav if they are
+            checkMembershipStatus(user, token);
         } else {
             // User is not logged in
             authLinks.style.display = 'flex';
             userMenu.style.display = 'none';
+        }
+    }
+
+    async function checkMembershipStatus(user, token) {
+        const API_URL = 'https://tjib26.pythonanywhere.com/api';
+        
+        try {
+            // Fetch user's subscription status
+            const response = await fetch(`${API_URL}/auth/user/`, {
+                headers: {
+                    'Authorization': `Token ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                
+                // Check if user has an active subscription
+                if (userData.has_active_subscription) {
+                    // User is a paying member, hide the membership nav
+                    const membershipNav = document.getElementById('nav-membership');
+                    if (membershipNav) {
+                        membershipNav.style.display = 'none';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Could not check membership status:', error);
+            // Silently fail - not critical functionality
         }
     }
 

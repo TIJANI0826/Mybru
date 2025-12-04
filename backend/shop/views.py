@@ -10,7 +10,7 @@ from datetime import timedelta
 
 from .models import Tea, Ingredient, Cart, Order, Membership, PickupLocation, IngredientCategory, Subscription, Payment, Profile
 from .models import DeliveryAddress
-from .serializers import TeaSerializer, IngredientSerializer, CartSerializer, OrderSerializer, MembershipSerializer, CustomUserSerializer, CustomUserCreateSerializer, PickupLocationSerializer, DeliveryAddressSerializer, IngredientCategorySerializer, SubscriptionSerializer, PaymentSerializer, ProfileSerializer
+from .serializers import TeaSerializer, IngredientSerializer, CartSerializer, OrderSerializer, MembershipSerializer, CustomUserSerializer, CustomUserCreateSerializer, PickupLocationSerializer, DeliveryAddressSerializer, IngredientCategorySerializer, SubscriptionSerializer, PaymentSerializer, ProfileSerializer, UserDetailedSerializer
 
 class TeaViewSet(viewsets.ModelViewSet):
     queryset = Tea.objects.all()
@@ -60,7 +60,15 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         return Subscription.objects.filter(user=user)
 
     def perform_create(self, serializer):
-        serializer.save()
+        subscription = serializer.save()
+        # Update the user's profile current_membership to this membership
+        try:
+            profile, created = Profile.objects.get_or_create(user=self.request.user)
+            profile.current_membership = subscription.membership
+            profile.save()
+        except Exception:
+            # If updating profile fails, we still return the created subscription
+            pass
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def cancel(self, request, pk=None):
@@ -226,6 +234,14 @@ def login(request):
         'user': CustomUserSerializer(user).data,
         'token': token.key
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_detailed(request):
+    """Get current user with detailed info including membership status"""
+    serializer = UserDetailedSerializer(request.user)
+    return Response(serializer.data)
 
 
 @api_view(['GET'])

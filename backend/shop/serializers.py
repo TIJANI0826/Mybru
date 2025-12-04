@@ -75,6 +75,44 @@ class CustomUserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class UserDetailedSerializer(serializers.ModelSerializer):
+    """Enhanced user serializer that includes membership status"""
+    has_active_subscription = serializers.SerializerMethodField()
+    active_membership = serializers.SerializerMethodField()
+    memberships = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'has_active_subscription', 'active_membership', 'memberships']
+        read_only_fields = ['id']
+    
+    def get_has_active_subscription(self, obj):
+        """Check if user has any active subscription"""
+        return obj.memberships.filter(status='active').exists()
+    
+    def get_active_membership(self, obj):
+        """Get the user's active membership details"""
+        active_subscription = obj.memberships.filter(status='active').first()
+        if active_subscription:
+            return MembershipSerializer(active_subscription.membership).data
+        return None
+    
+    def get_memberships(self, obj):
+        """Get all user subscriptions"""
+        subscriptions = obj.memberships.all()
+        return SubscriptionSerializerSimple(subscriptions, many=True).data
+
+
+class SubscriptionSerializerSimple(serializers.ModelSerializer):
+    """Simplified subscription serializer"""
+    membership = MembershipSerializer(read_only=True)
+    
+    class Meta:
+        model = Subscription
+        fields = ['id', 'membership', 'status', 'start_date', 'end_date']
+        read_only_fields = ['id']
+
+
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True, label="Confirm password")
@@ -129,12 +167,29 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     current_membership = MembershipSerializer(read_only=True)
-    user_details = CustomUserSerializer(source='user', read_only=True)
+    user_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = ['id', 'user', 'user_details', 'current_membership', 'bio', 'tea_preferences', 'health_goals', 'created_at', 'updated_at']
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def get_user_details(self, obj):
+        # Use SerializerMethodField to avoid potential import/order issues
+        try:
+            return CustomUserSerializer(obj.user).data if obj.user else None
+        except Exception:
+            # Fallback: return minimal user info
+            user = getattr(obj, 'user', None)
+            if not user:
+                return None
+            return {
+                'id': getattr(user, 'id', None),
+                'username': getattr(user, 'username', ''),
+                'email': getattr(user, 'email', ''),
+                'first_name': getattr(user, 'first_name', ''),
+                'last_name': getattr(user, 'last_name', ''),
+            }
 
 
 class PickupLocationSerializer(serializers.ModelSerializer):

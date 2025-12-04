@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - myBru</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .profile-section {
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+        }
+
+        .profile-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .profile-header h2 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .profile-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .profile-card, .subscription-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-card h3, .subscription-card h3 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 2px solid #8B4513;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .profile-detail {
+            margin: 12px 0;
+            color: #666;
+        }
+
+        .profile-detail strong {
+            color: #333;
+            display: inline-block;
+            min-width: 140px;
+        }
+
+        .membership-badge {
+            display: inline-block;
+            background: #8B4513;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin: 6px 0;
+        }
+
+        .subscription-status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            font-weight: bold;
+        }
+
+        .subscription-status.active {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+
+        .subscription-status.paused {
+            background: #fff3e0;
+            color: #e65100;
+            border-left: 4px solid #ff9800;
+        }
+
+        .subscription-status.cancelled {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #8B4513;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #6b3410;
+        }
+
+        .btn-secondary {
+            background: #ccc;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #aaa;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .membership-features {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+        }
+
+        .membership-features li {
+            padding: 8px 0;
+            color: #555;
+            display: flex;
+            align-items: center;
+        }
+
+        .membership-features li:before {
+            content: "✓";
+            color: #8B4513;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1.1em;
+        }
+
+        .no-membership {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .no-membership h3 {
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .no-membership a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #8B4513;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .profile-header h2 {
+                font-size: 1.6em;
+            }
+
+            .profile-content {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="site-nav">
+            <button id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="hamburger"></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="generic.html">Generic Brews</a></li>
+                <li id="nav-membership" style="display:none;"><a href="membership.html">Membership</a></li>
+                <li><a href="about.html">About Us</a></li>
+                <li><a href="cart.html">Cart</a></li>
+            </ul>
+        </nav>
+
+        <header>
+            <div class="header-top">
+                <div>
+                    <h1>myBru <small>with a touch of couture!</small></h1>
+                    <p>Master the Art of Intentional Brewing for different and diverse occasions, mood strikes, special craving, body chemistry, health target and allergies.</p>
+                </div>
+                <div class="header-right">
+                    <div class="cart-container">
+                        <a href="cart.html" id="cart-icon" title="View Cart">
+                            <img src="images/cart-icon.png" alt="Cart" width="30">
+                            <span id="cart-counter">0</span>
+                        </a>
+                    </div>
+                    <div class="auth-section">
+                        <div id="user-menu" class="user-menu" style="display: none;">
+                            <span id="user-name" class="user-name"></span>
+                            <button id="logout-btn" class="btn-logout">Logout</button>
+                        </div>
+                        <div id="auth-links" class="auth-links">
+                            <a href="login.html" class="btn-login">Login</a>
+                            <a href="signup.html" class="btn-signup">Sign Up</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="profile-section">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <h2>My Profile</h2>
+                        <p>View and manage your membership and subscription details</p>
+                    </div>
+
+                    <div id="profile-content">
+                        <!-- Profile and subscription content will be loaded here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="consultation.html">Book a Consultation</a></li>
+                        <li><a href="subscription.html">Subscriptions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2024 myBru. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = 'https://tjib26.pythonanywhere.com/api';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            checkAuthStatus();
+            await loadProfileAndSubscription();
+        });
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem('token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Token ${token}`;
+            }
+            return headers;
+        }
+
+        function checkAuthStatus() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const token = localStorage.getItem('token');
+            const userMenu = document.getElementById('user-menu');
+            const authLinks = document.getElementById('auth-links');
+            const userName = document.getElementById('user-name');
+
+            if (user && token) {
+                authLinks.style.display = 'none';
+                userMenu.style.display = 'flex';
+                userName.textContent = user.username || user.email;
+            } else {
+                authLinks.style.display = 'flex';
+                userMenu.style.display = 'none';
+                // Redirect non-authenticated users to login
+                setTimeout(() => { window.location.href = 'login.html'; }, 100);
+            }
+
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', logout);
+            }
+        }
+
+        function logout() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                fetch(`${API_URL}/auth/logout/`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                }).then(() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('user-membership');
+                    window.location.href = 'home.html';
+                });
+            }
+        }
+
+        async function loadProfileAndSubscription() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                // Fetch profile
+                const profileResp = await fetch(`${API_URL}/profiles/my_profile/`, {
+                    headers: getAuthHeaders()
+                });
+                if (!profileResp.ok) throw new Error('Failed to fetch profile');
+                const profile = await profileResp.json();
+
+                // Fetch subscriptions
+                const subsResp = await fetch(`${API_URL}/subscriptions/`, {
+                    headers: getAuthHeaders()
+                });
+                if (!subsResp.ok) throw new Error('Failed to fetch subscriptions');
+                const subscriptions = await subsResp.json();
+
+                displayProfileAndSubscription(profile, subscriptions);
+            } catch (err) {
+                console.error('Error loading profile:', err);
+                document.getElementById('profile-content').innerHTML = '<p>Error loading profile. Please try again later.</p>';
+            }
+        }
+
+        function displayProfileAndSubscription(profile, subscriptions) {
+            const contentEl = document.getElementById('profile-content');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!profile.current_membership) {
+                // No membership
+                contentEl.innerHTML = `
+                    <div class="no-membership">
+                        <h3>You don't have an active membership yet</h3>
+                        <p>Browse our membership plans and upgrade your experience.</p>
+                        <a href="membership.html">View Membership Plans</a>
+                    </div>
+                `;
+                // Show membership nav
+                document.getElementById('nav-membership').style.display = 'block';
+                return;
+            }
+
+            // Hide membership nav for members
+            document.getElementById('nav-membership').style.display = 'none';
+
+            // Get active subscription
+            const activeSubscription = subscriptions.find(s => s.status === 'active');
+
+            let html = `
+                <div class="profile-content">
+                    <div class="profile-card">
+                        <h3>Personal Information</h3>
+                        <div class="profile-detail">
+                            <strong>Username:</strong> ${user.username || 'N/A'}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Email:</strong> ${user.email || 'N/A'}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Name:</strong> ${user.first_name || ''} ${user.last_name || ''}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Bio:</strong><br/>${profile.bio || 'No bio added'}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Tea Preferences:</strong><br/>
+                            ${profile.tea_preferences && profile.tea_preferences.length > 0 
+                                ? profile.tea_preferences.join(', ') 
+                                : 'No preferences set'}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Health Goals:</strong><br/>
+                            ${profile.health_goals || 'No health goals set'}
+                        </div>
+                    </div>
+
+                    <div class="subscription-card">
+                        <h3>Membership & Subscription</h3>
+                        <div class="membership-badge">${profile.current_membership.tier}</div>
+                        <div class="profile-detail">
+                            <strong>Plan:</strong> ${profile.current_membership.name}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Price:</strong> <span class="price" data-amount-ngn="${profile.current_membership.price}"></span>/month
+                        </div>
+            `;
+
+            if (activeSubscription) {
+                const statusClass = activeSubscription.status;
+                html += `
+                        <div class="subscription-status ${statusClass}">
+                            Status: ${activeSubscription.status.toUpperCase()}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Started:</strong> ${new Date(activeSubscription.start_date).toLocaleDateString()}
+                        </div>
+                        <div class="profile-detail">
+                            <strong>Auto-Renew:</strong> ${activeSubscription.auto_renew ? 'Yes' : 'No'}
+                        </div>
+                        ${activeSubscription.renewal_date ? `
+                        <div class="profile-detail">
+                            <strong>Next Renewal:</strong> ${new Date(activeSubscription.renewal_date).toLocaleDateString()}
+                        </div>
+                        ` : ''}
+                        <div class="btn-group">
+                `;
+
+                if (activeSubscription.status === 'active') {
+                    html += `
+                            <button class="btn btn-secondary" onclick="pauseSubscription(${activeSubscription.id})">Pause</button>
+                            <button class="btn btn-danger" onclick="cancelSubscription(${activeSubscription.id})">Cancel</button>
+                    `;
+                } else if (activeSubscription.status === 'paused') {
+                    html += `
+                            <button class="btn btn-primary" onclick="resumeSubscription(${activeSubscription.id})">Resume</button>
+                            <button class="btn btn-danger" onclick="cancelSubscription(${activeSubscription.id})">Cancel</button>
+                    `;
+                }
+
+                html += `
+                        </div>
+                        <h4 style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px;">Features</h4>
+                        <ul class="membership-features">
+                `;
+
+                // Display features
+                let featuresArr = [];
+                if (Array.isArray(profile.current_membership.features)) {
+                    featuresArr = profile.current_membership.features;
+                } else if (typeof profile.current_membership.features === 'string') {
+                    try {
+                        const parsed = JSON.parse(profile.current_membership.features);
+                        if (Array.isArray(parsed)) featuresArr = parsed;
+                        else if (typeof parsed === 'object' && parsed !== null) featuresArr = Object.values(parsed);
+                        else featuresArr = [String(parsed)];
+                    } catch (e) {
+                        featuresArr = profile.current_membership.features.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+                    }
+                }
+
+                featuresArr.forEach(f => {
+                    html += `<li>${f}</li>`;
+                });
+
+                if (profile.current_membership.includes_health_protocol) {
+                    html += `<li>Personalized Health Protocols</li>`;
+                }
+
+                const customText = profile.current_membership.max_customizations_per_month > 0 
+                    ? `${profile.current_membership.max_customizations_per_month} Customizations/Month` 
+                    : 'Unlimited Customizations';
+                html += `<li>${customText}</li>`;
+
+                html += `</ul>`;
+            } else {
+                html += `
+                        <div class="subscription-status paused">
+                            No Active Subscription
+                        </div>
+                        <p>Your membership is inactive. <a href="membership.html">Renew your subscription</a></p>
+                `;
+            }
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            contentEl.innerHTML = html;
+            // Update price elements
+            if (window.updatePriceElements) window.updatePriceElements();
+        }
+
+        async function pauseSubscription(subscriptionId) {
+            if (!confirm('Are you sure you want to pause your subscription?')) return;
+
+            try {
+                const resp = await fetch(`${API_URL}/subscriptions/${subscriptionId}/pause/`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                if (resp.ok) {
+                    alert('Subscription paused.');
+                    location.reload();
+                } else {
+                    alert('Failed to pause subscription.');
+                }
+            } catch (err) {
+                console.error('Error pausing subscription:', err);
+                alert('An error occurred.');
+            }
+        }
+
+        async function resumeSubscription(subscriptionId) {
+            try {
+                const resp = await fetch(`${API_URL}/subscriptions/${subscriptionId}/resume/`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                if (resp.ok) {
+                    alert('Subscription resumed.');
+                    location.reload();
+                } else {
+                    alert('Failed to resume subscription.');
+                }
+            } catch (err) {
+                console.error('Error resuming subscription:', err);
+                alert('An error occurred.');
+            }
+        }
+
+        async function cancelSubscription(subscriptionId) {
+            if (!confirm('Are you sure you want to cancel your subscription? This action cannot be undone.')) return;
+
+            try {
+                const resp = await fetch(`${API_URL}/subscriptions/${subscriptionId}/cancel/`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                if (resp.ok) {
+                    alert('Subscription cancelled.');
+                    localStorage.removeItem('user-membership');
+                    location.reload();
+                } else {
+                    alert('Failed to cancel subscription.');
+                }
+            } catch (err) {
+                console.error('Error cancelling subscription:', err);
+                alert('An error occurred.');
+            }
+        }
+    </script>
+</body>
+</html>
