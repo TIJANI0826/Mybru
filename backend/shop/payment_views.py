@@ -3,13 +3,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.conf import settings
+from django.utils import timezone
 from decimal import Decimal
 import json
 import hmac
 import hashlib
 import requests
 
-from .models import Cart, Order, OrderItem, PickupLocation, DeliveryAddress
+from .models import Cart, Order, OrderItem, PickupLocation, DeliveryAddress, Subscription
 from .serializers import OrderSerializer, DeliveryAddressSerializer
 
 # Get frontend URL from settings for Paystack redirect
@@ -312,3 +313,100 @@ def paystack_webhook(request):
         return Response(status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Membership Payment Endpoints
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def initiate_membership_payment(request):
+    """Initiate a Paystack payment for membership subscription.
+    
+    Payload:
+    - membership_id: ID of the membership tier to subscribe to
+    
+    Returns:
+    - authorization_url: URL to redirect user to Paystack for payment
+    - access_code: Paystack access code for verification
+    - reference: Unique reference for this payment
+    """
+    from .models import Membership
+    
+    user = request.user
+    data = request.data or {}
+    membership_id = data.get('membership_id')
+    
+    if not membership_id:
+        return Response({'error': 'membership_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        membership = Membership.objects.get(id=membership_id)
+    except Membership.DoesNotExist:
+        return Response({'error': 'Membership not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user already has active subscription for this membership
+    subscription = Subscription.objects.filter(
+        user=user,
+        membership=membership,
+        status='active'
+    ).first()
+    
+    if subscription:
+        return Response(
+            {'error': f'User already has active subscription to {membership.tier}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Calculate amount in naira (convert to smallest unit - kobo)
+    amount_in_naira = membership.price
+    amount_in_kobo = int(amount_in_naira * 100)
+    
+    # Generate payment reference
+    payment_reference = f"MEMBERSHIP-{user.id}-{membership.id}-{int(timezone.now().timestamp())}"
+    
+    paystack_headers = {
+        'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}',
+        'Content-Type': 'application/json'
+    }
+    
+    paystack_payload = {
+        'email': user.email,
+        'amount': amount_in_kobo,
+        'reference': payment_reference,
+        'metadata': {
+            'user_id': user.id,
+            'membership_id': membership.id,
+            'membership_tier': membership.tier,
+            'type': 'membership'
+        }
+    }
+    
+    try:
+        response = requests.post(
+            'https://api.paystack.co/transaction/initialize',
+            headers=paystack_headers,
+            json=paystack_payload
+        )
+        response.raise_for_status()
+        
+        paystack_response = response.json()
+        
+        if paystack_response.get('status'):
+            # Store payment reference in session for later verification
+            request.session['membership_payment_reference'] = payment_reference
+            
+            return Response({
+                'status': True,
+                'authorization_url': paystack_response['data']['authorization_url'],
+                'access_code': paystack_response['data']['access_code'],
+                'reference': payment_reference,
+                'amount': float(amount_in_naira)
+            })
+        else:
+            return Response(
+                {'error': paystack_response.get('message', 'Failed to initialize payment')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    except requests.exceptions.RequestException as e:
+        return Response({'error': f'Payment service error: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)

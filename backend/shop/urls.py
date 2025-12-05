@@ -38,5 +38,7 @@ urlpatterns = [
     path('payment/initiate/', payment_views.initiate_payment, name='initiate_payment'),
     path('payment/verify/', payment_views.verify_payment, name='verify_payment'),
     path('payment/webhook/', payment_views.paystack_webhook, name='paystack_webhook'),
+    path('payment/membership/initiate/', payment_views.initiate_membership_payment, name='initiate_membership_payment'),
+    path('payment/membership/verify/', payment_views.verify_membership_payment, name='verify_membership_payment'),
     path('delivery-addresses/', views.DeliveryAddressViewSet.as_view({'get': 'list', 'post': 'create'}), name='delivery_addresses'),
 ]

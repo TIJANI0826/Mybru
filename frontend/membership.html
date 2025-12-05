@@ -207,6 +207,7 @@
             }
         }
     </style>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 <body>
     <div class="container">
@@ -486,12 +487,52 @@
         }
 
         function subscribeMembership(membershipId, tier) {
-            // Store selected membership and navigate to the consultation/subscription form
-            const sel = { id: membershipId, tier };
-            try { localStorage.setItem('pending_membership', JSON.stringify(sel)); } catch (e) {}
-            // Pass via query param as well for convenience
-            const q = `?membership_id=${encodeURIComponent(membershipId)}&tier=${encodeURIComponent(tier)}`;
-            window.location.href = `consultation.html${q}`;
+            // Initiate Paystack payment for membership subscription
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                alert('Please log in first to subscribe to a membership.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Show loading spinner
+            const originalText = event.target.textContent;
+            event.target.disabled = true;
+            event.target.textContent = 'Processing...';
+
+            // Call backend to initiate payment
+            fetch(`${API_URL}/payment/membership/initiate/`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    membership_id: membershipId
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status && data.authorization_url) {
+                    // Store reference in sessionStorage for verification
+                    sessionStorage.setItem('membership_payment_reference', data.reference);
+                    sessionStorage.setItem('membership_tier', tier);
+                    
+                    // Redirect to Paystack
+                    window.location.href = data.authorization_url;
+                } else {
+                    throw new Error(data.error || 'Failed to initiate payment');
+                }
+            })
+            .catch(error => {
+                console.error('Error initiating payment:', error);
+                alert(`Error: ${error.error || error.message || 'Failed to process payment. Please try again.'}`);
+                event.target.disabled = false;
+                event.target.textContent = originalText;
+            });
         }
 
         async function createSubscription(membershipId) {

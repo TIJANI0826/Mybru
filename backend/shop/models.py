@@ -128,6 +128,12 @@ class Subscription(models.Model):
         ('expired', 'Expired'),
     ]
     
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+    ]
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memberships')
     membership = models.ForeignKey(Membership, on_delete=models.CASCADE, related_name='subscriptions')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
@@ -136,6 +142,9 @@ class Subscription(models.Model):
     renewal_date = models.DateTimeField(null=True, blank=True)  # Next auto-renewal date
     auto_renew = models.BooleanField(default=True)
     customizations_used_this_month = models.PositiveIntegerField(default=0)
+    payment_reference = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
     class Meta:
         ordering = ['-start_date']
