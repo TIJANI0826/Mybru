@@ -1270,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (placeOrderBtn) {
             placeOrderBtn.addEventListener('click', async () => {
                 placeOrderBtn.disabled = true;
-                placeOrderBtn.textContent = 'Placing order...';
+                placeOrderBtn.textContent = 'Processing...';
 
                 const selectedType = document.querySelector('input[name="delivery-type"]:checked').value;
                 const payload = { delivery_type: selectedType };
@@ -1308,32 +1308,50 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 try {
-                    const resp = await fetch(`${API_URL}/checkout/place-order/`, {
+                    // Step 1: Initiate payment with Paystack
+                    placeOrderBtn.textContent = 'Redirecting to payment...';
+                    const paymentResp = await fetch(`${API_URL}/payment/initiate/`, {
                         method: 'POST',
                         headers: getAuthHeaders(),
                         body: JSON.stringify(payload)
                     });
 
-                    if (resp.ok) {
-                        const order = await resp.json();
-                        displayNotification('Order placed successfully', 'success');
-                        // Clear local cart mirror and update counter
-                        cart = [];
-                        saveCart();
-                        // Redirect to order summary or home
-                        setTimeout(() => window.location.href = 'home.html', 800);
+                    if (!paymentResp.ok) {
+                        const err = await paymentResp.json();
+                        displayNotification(`Payment error: ${err.error || 'Could not initiate payment'}`, 'error');
+                        placeOrderBtn.disabled = false;
+                        placeOrderBtn.textContent = 'Place Order';
                         return;
-                    } else {
-                        const err = await resp.json();
-                        displayNotification(`Error: ${err.error || 'Could not place order'}`, 'error');
                     }
-                } catch (err) {
-                    console.error('Place order failed:', err);
-                    displayNotification('Could not place order', 'error');
-                }
 
-                placeOrderBtn.disabled = false;
-                placeOrderBtn.textContent = 'Place Order';
+                    const paymentData = await paymentResp.json();
+                    
+                    if (!paymentData.status) {
+                        displayNotification('Failed to initiate payment. Please try again.', 'error');
+                        placeOrderBtn.disabled = false;
+                        placeOrderBtn.textContent = 'Place Order';
+                        return;
+                    }
+
+                    // Step 2: Redirect to Paystack authorization URL
+                    // Store reference in sessionStorage for verification after payment
+                    sessionStorage.setItem('paystack_reference', paymentData.reference);
+                    
+                    // For Paystack Standard integration, redirect to their authorization URL
+                    // Paystack will handle the payment and redirect back
+                    // We'll set up the user to return to payment-success.html with the reference
+                    const returnUrl = `${window.location.origin}/payment-success.html?reference=${paymentData.reference}`;
+                    
+                    // Open Paystack authorization in the same window
+                    // After payment completes, user will be redirected back
+                    window.location.href = paymentData.authorization_url;
+
+                } catch (err) {
+                    console.error('Place order error:', err);
+                    displayNotification('Could not process payment', 'error');
+                    placeOrderBtn.disabled = false;
+                    placeOrderBtn.textContent = 'Place Order';
+                }
             });
         }
     }

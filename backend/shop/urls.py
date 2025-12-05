@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from . import oauth_views
 from . import cart_views
+from . import payment_views
 
 router = DefaultRouter()
 router.register(r'teas', views.TeaViewSet)
@@ -34,5 +35,8 @@ urlpatterns = [
     path('cart/remove/', cart_views.remove_from_cart, name='remove_from_cart'),
     path('cart/clear/', cart_views.clear_cart, name='clear_cart'),
     path('checkout/place-order/', cart_views.place_order, name='place_order'),
+    path('payment/initiate/', payment_views.initiate_payment, name='initiate_payment'),
+    path('payment/verify/', payment_views.verify_payment, name='verify_payment'),
+    path('payment/webhook/', payment_views.paystack_webhook, name='paystack_webhook'),
     path('delivery-addresses/', views.DeliveryAddressViewSet.as_view({'get': 'list', 'post': 'create'}), name='delivery_addresses'),
 ]
