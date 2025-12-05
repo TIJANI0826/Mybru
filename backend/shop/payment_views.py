@@ -410,3 +410,108 @@ def initiate_membership_payment(request):
     
     except requests.exceptions.RequestException as e:
         return Response({'error': f'Payment service error: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def verify_membership_payment(request):
+    """Verify a Paystack payment and create membership subscription.
+
+    Query parameters:
+    - reference: Paystack payment reference
+
+    Returns:
+    - success: True if payment was verified
+    - subscription_id: ID of created subscription
+    - membership_tier: Name of membership tier
+    - amount: Amount paid
+    - status: Subscription status
+    """
+    from .models import Membership, Subscription
+    from datetime import timedelta
+    from .serializers import SubscriptionSerializer
+
+    user = request.user
+    reference = request.query_params.get('reference')
+
+    if not reference:
+        return Response({'error': 'reference is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    paystack_headers = {
+        'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}'
+    }
+
+    try:
+        response = requests.get(
+            f'https://api.paystack.co/transaction/verify/{reference}',
+            headers=paystack_headers,
+            timeout=10
+        )
+        response.raise_for_status()
+
+        paystack_response = response.json()
+
+        if not paystack_response.get('status'):
+            return Response(
+                {'error': 'Payment verification failed', 'message': paystack_response.get('message')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        data = paystack_response.get('data', {})
+
+        # Verify status is successful
+        if data.get('status') != 'success':
+            return Response(
+                {'error': f"Payment status is {data.get('status')}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Extract metadata
+        metadata = data.get('metadata', {})
+        membership_id = metadata.get('membership_id')
+
+        if not membership_id:
+            return Response({'error': 'Invalid payment metadata'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            membership = Membership.objects.get(id=membership_id)
+        except Membership.DoesNotExist:
+            return Response({'error': 'Membership not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create or update subscription
+        amount_paid = Decimal(str(data.get('amount', 0) / 100))  # Convert from kobo to naira
+
+        subscription, created = Subscription.objects.get_or_create(
+            user=user,
+            membership=membership,
+            defaults={
+                'payment_reference': reference,
+                'payment_status': 'paid',
+                'amount_paid': amount_paid,
+                'renewal_date': timezone.now() + timedelta(days=30),
+                'status': 'active'
+            }
+        )
+
+        if not created:
+            subscription.payment_reference = reference
+            subscription.payment_status = 'paid'
+            subscription.amount_paid = amount_paid
+            subscription.status = 'active'
+            subscription.renewal_date = timezone.now() + timedelta(days=30)
+            subscription.save()
+
+        return Response({
+            'success': True,
+            'subscription_id': subscription.id,
+            'membership_tier': membership.tier,
+            'amount': float(amount_paid),
+            'status': subscription.status,
+            'renewal_date': subscription.renewal_date.isoformat(),
+            'subscription': SubscriptionSerializer(subscription).data
+        })
+
+    except requests.exceptions.RequestException as e:
+        return Response({'error': f'Payment verification error: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
+    except Exception as e:
+        return Response({'error': f'Error creating subscription: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
