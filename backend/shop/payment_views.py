@@ -12,6 +12,8 @@ import requests
 
 from .models import Cart, Order, OrderItem, PickupLocation, DeliveryAddress, Subscription
 from .serializers import OrderSerializer, DeliveryAddressSerializer
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 # Get frontend URL from settings for Paystack redirect
 FRONTEND_URL = settings.FRONTEND_URL
@@ -300,15 +302,137 @@ def paystack_webhook(request):
 
     if signature != computed_signature:
         return Response({'error': 'Invalid signature'}, status=status.HTTP_401_UNAUTHORIZED)
-
     try:
         event = request.data
+        # We only process successful charge events
         if event.get('event') == 'charge.success':
             data = event.get('data', {})
             reference = data.get('reference')
-            # Payment already verified via GET /verify_payment endpoint
-            # This is just a notification
-            pass
+            metadata = data.get('metadata', {}) or {}
+
+            # Idempotency: if we've already recorded this reference, acknowledge
+            if Order.objects.filter(payment_reference=reference).exists() or Subscription.objects.filter(payment_reference=reference).exists():
+                return Response(status=status.HTTP_200_OK)
+
+            ptype = metadata.get('type') or metadata.get('payment_type')
+
+            # MEMBERSHIP flow
+            if ptype == 'membership' or metadata.get('membership_id'):
+                try:
+                    membership_id = metadata.get('membership_id') or metadata.get('membership')
+                    if not membership_id:
+                        return Response(status=status.HTTP_200_OK)
+
+                    from .models import Membership
+                    from datetime import timedelta
+
+                    try:
+                        membership = Membership.objects.get(id=membership_id)
+                    except Membership.DoesNotExist:
+                        return Response(status=status.HTTP_200_OK)
+
+                    user_id = metadata.get('user_id')
+                    if not user_id:
+                        return Response(status=status.HTTP_200_OK)
+
+                    try:
+                        user = User.objects.get(id=user_id)
+                    except User.DoesNotExist:
+                        return Response(status=status.HTTP_200_OK)
+
+                    amount_paid = Decimal(str(data.get('amount', 0) / 100))
+
+                    subscription, created = Subscription.objects.get_or_create(
+                        user=user,
+                        membership=membership,
+                        defaults={
+                            'payment_reference': reference,
+                            'payment_status': 'paid',
+                            'amount_paid': amount_paid,
+                            'renewal_date': timezone.now() + timedelta(days=30),
+                            'status': 'active'
+                        }
+                    )
+
+                    if not created:
+                        subscription.payment_reference = reference
+                        subscription.payment_status = 'paid'
+                        subscription.amount_paid = amount_paid
+                        subscription.status = 'active'
+                        subscription.renewal_date = timezone.now() + timedelta(days=30)
+                        subscription.save()
+                except Exception:
+                    # Acknowledge to avoid webhook retries; log if needed
+                    pass
+
+            # ORDER flow
+            elif ptype == 'order' or metadata.get('order_data'):
+                try:
+                    user_id = metadata.get('user_id')
+                    if not user_id:
+                        return Response(status=status.HTTP_200_OK)
+
+                    try:
+                        user = User.objects.get(id=user_id)
+                    except User.DoesNotExist:
+                        return Response(status=status.HTTP_200_OK)
+
+                    try:
+                        cart = Cart.objects.get(user=user)
+                    except Cart.DoesNotExist:
+                        return Response(status=status.HTTP_200_OK)
+
+                    if not cart.items.exists():
+                        return Response(status=status.HTTP_200_OK)
+
+                    order_data = metadata.get('order_data', {})
+                    delivery_type = order_data.get('delivery_type', 'pickup')
+                    pickup_id = order_data.get('pickup_id')
+                    delivery_address_id = order_data.get('delivery_address_id')
+                    total_price = Decimal(str(order_data.get('total_price', '0')))
+                    delivery_fee = Decimal(str(order_data.get('delivery_fee', '0')))
+
+                    pickup_name = None
+                    addr = None
+
+                    if delivery_type == 'pickup' and pickup_id:
+                        try:
+                            pickup = PickupLocation.objects.get(id=pickup_id)
+                            pickup_name = f"{pickup.name} - {pickup.branch}"
+                        except PickupLocation.DoesNotExist:
+                            pickup_name = ''
+                    else:
+                        if delivery_address_id:
+                            try:
+                                addr = DeliveryAddress.objects.get(id=delivery_address_id, user=user)
+                            except DeliveryAddress.DoesNotExist:
+                                addr = None
+
+                    # Create order
+                    order = Order.objects.create(
+                        user=user,
+                        total_price=total_price,
+                        delivery_type=delivery_type,
+                        pickup_location=pickup_name if pickup_name else (addr.address_line1 if addr else ''),
+                        delivery_address_line1=(addr.address_line1 if addr else None),
+                        delivery_address_line2=(addr.address_line2 if addr else None),
+                        delivery_city=(addr.city if addr else None),
+                        delivery_state=(addr.state if addr else None),
+                        delivery_zip_code=(addr.zip_code if addr else None),
+                        delivery_fee=delivery_fee,
+                        payment_reference=reference,
+                        payment_status='paid'
+                    )
+
+                    for ci in cart.items.all():
+                        if ci.ingredient:
+                            OrderItem.objects.create(order=order, ingredient=ci.ingredient, quantity=ci.quantity)
+                        else:
+                            OrderItem.objects.create(order=order, tea=ci.tea, quantity=ci.quantity)
+
+                    cart.items.all().delete()
+                except Exception:
+                    pass
 
         return Response(status=status.HTTP_200_OK)
     except Exception as e:
