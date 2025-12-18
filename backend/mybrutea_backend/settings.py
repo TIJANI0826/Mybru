@@ -218,6 +218,7 @@ SIMPLE_JWT = {
 
 # Djoser Configuration
 DJOSER = {
+    'LOGIN_FIELD': 'email',
     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
     'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
@@ -278,3 +279,4 @@ EMAIL_HOST_PASSWORD = 'qoollmurweuslqoh'  #your password
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
+
