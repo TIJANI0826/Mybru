@@ -212,16 +212,25 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
-    """Login user with username and password"""
-    username = request.data.get('username')
+    """Login user with email and password"""
+    email = request.data.get('email')
     password = request.data.get('password')
     
-    if not username or not password:
+    if not email or not password:
         return Response(
-            {'error': 'Username and password are required'},
+            {'error': 'Email and password are required'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
+    try:
+        user_obj = User.objects.get(email=email)
+        username = user_obj.username
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'Invalid credentials'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
     user = authenticate(username=username, password=password)
     if user is None:
         return Response(
