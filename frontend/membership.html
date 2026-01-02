@@ -388,9 +388,12 @@
                         <strong>Price:</strong> <span class="price" data-amount-ngn="${profile.current_membership.price}"></span>/month
                     </div>
                 `;
+                // Persist current membership for other pages
+                try { localStorage.setItem('user-membership', JSON.stringify(profile.current_membership)); } catch (e) { /* ignore */ }
                 if (window.updatePriceElements) window.updatePriceElements();
             } else {
                 statusEl.style.display = 'none';
+                try { localStorage.removeItem('user-membership'); } catch (e) { /* ignore */ }
             }
         }
 

@@ -290,6 +290,7 @@
             checkAuthStatus();
             await loadProfileAndSubscription();
         });
+        let CURRENT_PROFILE = null;
 
         function getAuthHeaders() {
             const token = localStorage.getItem('token');
@@ -358,6 +359,7 @@
                 if (!subsResp.ok) throw new Error('Failed to fetch subscriptions');
                 const subscriptions = await subsResp.json();
 
+                CURRENT_PROFILE = profile;
                 displayProfileAndSubscription(profile, subscriptions);
             } catch (err) {
                 console.error('Error loading profile:', err);
@@ -405,15 +407,38 @@
                         <div class="profile-detail">
                             <strong>Bio:</strong><br/>${profile.bio || 'No bio added'}
                         </div>
-                        <div class="profile-detail">
+                        <div class="profile-detail" id="pref-display">
                             <strong>Tea Preferences:</strong><br/>
                             ${profile.tea_preferences && profile.tea_preferences.length > 0 
                                 ? profile.tea_preferences.join(', ') 
                                 : 'No preferences set'}
                         </div>
-                        <div class="profile-detail">
+                        <div class="profile-detail" id="health-display">
                             <strong>Health Goals:</strong><br/>
                             ${profile.health_goals || 'No health goals set'}
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button class="btn btn-primary" onclick="openEditPreferences()">Edit Preferences</button>
+                        </div>
+
+                        <div id="edit-preferences" style="display:none; margin-top:16px;">
+                            <h4>Edit Preferences</h4>
+                            <div style="margin-bottom:10px;">
+                                <label><strong>Tea Preferences (comma separated)</strong></label>
+                                <input type="text" id="input-tea-preferences" style="width:100%; padding:8px; margin-top:6px;" />
+                            </div>
+                            <div style="margin-bottom:10px;">
+                                <label><strong>Health Goals</strong></label>
+                                <input type="text" id="input-health-goals" style="width:100%; padding:8px; margin-top:6px;" />
+                            </div>
+                            <div style="margin-bottom:10px;">
+                                <label><strong>Bio</strong></label>
+                                <textarea id="input-bio" style="width:100%; padding:8px; margin-top:6px;" rows="3"></textarea>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-primary" onclick="savePreferences()">Save</button>
+                                <button class="btn btn-secondary" onclick="cancelEditPreferences()">Cancel</button>
+                            </div>
                         </div>
                     </div>
 
@@ -573,6 +598,66 @@
             } catch (err) {
                 console.error('Error cancelling subscription:', err);
                 alert('An error occurred.');
+            }
+        }
+
+        function openEditPreferences() {
+            if (!CURRENT_PROFILE) return;
+            const prefs = Array.isArray(CURRENT_PROFILE.tea_preferences) ? CURRENT_PROFILE.tea_preferences.join(', ') : (CURRENT_PROFILE.tea_preferences || '');
+            document.getElementById('input-tea-preferences').value = prefs;
+            document.getElementById('input-health-goals').value = CURRENT_PROFILE.health_goals || '';
+            document.getElementById('input-bio').value = CURRENT_PROFILE.bio || '';
+            document.getElementById('edit-preferences').style.display = 'block';
+            window.scrollTo({ top: document.getElementById('edit-preferences').offsetTop - 20, behavior: 'smooth' });
+        }
+
+        function cancelEditPreferences() {
+            document.getElementById('edit-preferences').style.display = 'none';
+        }
+
+        async function savePreferences() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please log in to update preferences.');
+                return;
+            }
+
+            const teaPrefRaw = document.getElementById('input-tea-preferences').value || '';
+            const teaPrefs = teaPrefRaw.split(',').map(s => s.trim()).filter(Boolean);
+            const healthGoals = document.getElementById('input-health-goals').value || '';
+            const bio = document.getElementById('input-bio').value || '';
+
+            try {
+                const resp = await fetch(`${API_URL}/profiles/my_profile/`, {
+                    method: 'PATCH',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        tea_preferences: teaPrefs,
+                        health_goals: healthGoals,
+                        bio: bio
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to update profile');
+                }
+
+                const updated = await resp.json();
+                CURRENT_PROFILE = updated;
+
+                // Update displayed fields
+                document.getElementById('pref-display').innerHTML = `<strong>Tea Preferences:</strong><br/>${(updated.tea_preferences && updated.tea_preferences.length>0)? updated.tea_preferences.join(', '): 'No preferences set'}`;
+                document.getElementById('health-display').innerHTML = `<strong>Health Goals:</strong><br/>${updated.health_goals || 'No health goals set'}`;
+                // Update bio in the profile-card (if present)
+                // find the bio element and update (best effort)
+                // Save to localStorage for other pages
+                localStorage.setItem('user-profile', JSON.stringify(updated));
+                alert('Preferences updated successfully.');
+                cancelEditPreferences();
+            } catch (err) {
+                console.error('Error saving preferences:', err);
+                alert(err.message || 'Failed to save preferences.');
             }
         }
     </script>

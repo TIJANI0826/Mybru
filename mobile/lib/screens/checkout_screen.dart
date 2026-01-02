@@ -40,40 +40,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final authUrl = resp['authorization_url'] as String;
         final referenceFromResp = resp['reference'] as String?;
 
-        if (kIsWeb) {
-          // Open in browser and allow user to complete payment; then verify with returned reference
-          await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
+        // Open the Paystack checkout in the external browser (works for web & mobile)
+        await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
 
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('Complete Payment'),
-              content: Text('The Paystack checkout opened in a new tab. Click "Verify" after completing the payment.'),
-              actions: [
-                TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text('Cancel')),
-                ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: Text('Verify')),
-              ],
-            ),
-          );
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Complete Payment'),
+            content: Text('The Paystack checkout opened in a new tab or external browser. Click "Verify" after completing the payment.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text('Cancel')),
+              ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: Text('Verify')),
+            ],
+          ),
+        );
 
-          if (confirmed == true) {
-            if (referenceFromResp == null) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No payment reference available')));
-            } else {
-              final result = await api.verifyOrderPayment(token, referenceFromResp);
-              if (result['status'] == true || result['order'] != null) {
-                cart.clear();
-                Navigator.of(context).pushReplacementNamed('/order_success', arguments: result);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment verification failed')));
-              }
-            }
-          }
-        } else {
-          final reference = await Navigator.of(context).pushNamed('/checkout_webview', arguments: {'url': authUrl});
-          if (reference != null) {
-            // verify
-            final result = await api.verifyOrderPayment(token, reference as String);
+        if (confirmed == true) {
+          if (referenceFromResp == null) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No payment reference available')));
+          } else {
+            final result = await api.verifyOrderPayment(token, referenceFromResp);
             if (result['status'] == true || result['order'] != null) {
               cart.clear();
               Navigator.of(context).pushReplacementNamed('/order_success', arguments: result);
@@ -97,23 +83,70 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cart = Provider.of<CartProvider>(context);
     return Scaffold(
       appBar: AppBar(title: Text('Checkout')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Items: ${cart.count}'),
-            SizedBox(height: 8),
-            Text('Subtotal: ₦${cart.subtotal.toStringAsFixed(2)}'),
-            SizedBox(height: 16),
-            DropdownButton<String>(
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total Items'),
+                        Text('${cart.count}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total Amount', style: TextStyle(fontSize: 18)),
+                        Text(
+                          '₦${cart.subtotal.toStringAsFixed(2)}',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text('Delivery Method', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
               value: deliveryType,
-              items: [DropdownMenuItem(child: Text('Pickup'), value: 'pickup'), DropdownMenuItem(child: Text('Delivery'), value: 'delivery')],
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.local_shipping_outlined),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'pickup', child: Text('Pickup')),
+                DropdownMenuItem(value: 'delivery', child: Text('Delivery')),
+              ],
               onChanged: (v) => setState(() => deliveryType = v ?? 'pickup'),
             ),
-            if (deliveryType == 'pickup') TextField(controller: _pickupIdCtrl, decoration: InputDecoration(labelText: 'Pickup location id (optional)')),
-            Spacer(),
-            ElevatedButton(onPressed: loading ? null : _startPayment, child: loading ? CircularProgressIndicator() : Text('Pay with Paystack'))
+            if (deliveryType == 'pickup') ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _pickupIdCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Pickup Location ID (Optional)',
+                  prefixIcon: Icon(Icons.store_outlined),
+                ),
+              ),
+            ],
+            const SizedBox(height: 32),
+            FilledButton(
+              onPressed: loading ? null : _startPayment,
+              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+              child: loading
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Pay with Paystack', style: TextStyle(fontSize: 16)),
+            )
           ],
         ),
       ),

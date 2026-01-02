@@ -3,7 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutWebView extends StatefulWidget {
   final String url;
-  CheckoutWebView({required this.url});
+  const CheckoutWebView({required this.url, Key? key}) : super(key: key);
 
   @override
   _CheckoutWebViewState createState() => _CheckoutWebViewState();
@@ -29,20 +29,18 @@ class _CheckoutWebViewState extends State<CheckoutWebView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Payment')),
+      appBar: AppBar(title: const Text('Payment')),
       body: Center(
         child: launched
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Payment opened in a new tab.'),
-                  SizedBox(height: 12),
-                  ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text('Return'))
+                  const Text('Payment opened in a new tab.'),
+                  const SizedBox(height: 12),
+                  ElevatedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Return'))
                 ],
               )
-            : CircularProgressIndicator(),
+            : const CircularProgressIndicator(),
       ),
     );
   }

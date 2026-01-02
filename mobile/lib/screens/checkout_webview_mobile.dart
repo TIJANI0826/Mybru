@@ -1,48 +1,46 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutWebView extends StatefulWidget {
   final String url;
-  CheckoutWebView({required this.url});
+  const CheckoutWebView({required this.url, Key? key}) : super(key: key);
 
   @override
   _CheckoutWebViewState createState() => _CheckoutWebViewState();
 }
 
 class _CheckoutWebViewState extends State<CheckoutWebView> {
-  late final WebViewController _controller;
-  bool loading = true;
+  bool launched = false;
 
   @override
   void initState() {
     super.initState();
-    if (Platform.isAndroid) WebView.platform = AndroidWebView();
+    _openExternal();
+  }
+
+  Future<void> _openExternal() async {
+    final uri = Uri.parse(widget.url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    setState(() => launched = true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Payment')),
-      body: Stack(
-        children: [
-          WebView(
-            initialUrl: widget.url,
-            javascriptMode: JavascriptMode.unrestricted,
-            navigationDelegate: (NavigationRequest request) {
-              final uri = Uri.parse(request.url);
-              if (uri.queryParameters.containsKey('reference')) {
-                final ref = uri.queryParameters['reference'];
-                Navigator.of(context).pop(ref);
-                return NavigationDecision.prevent;
-              }
-              return NavigationDecision.navigate;
-            },
-            onPageStarted: (_) => setState(() => loading = true),
-            onPageFinished: (_) => setState(() => loading = false),
-          ),
-          if (loading) Center(child: CircularProgressIndicator()),
-        ],
+      appBar: AppBar(title: const Text('Payment')),
+      body: Center(
+        child: launched
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Payment opened in a browser.'),
+                  const SizedBox(height: 12),
+                  ElevatedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Return')),
+                ],
+              )
+            : const CircularProgressIndicator(),
       ),
     );
   }
